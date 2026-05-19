@@ -1,14 +1,15 @@
 import streamlit as st
 import requests
+import base64
 
-# 1. Page Configuration Settings
+# 1. Universal Layout Settings
 st.set_page_config(
     page_title="MS Office 2016: Complete Training Guide",
     page_icon="📚",
     layout="wide"
 )
 
-# 2. Main Page Headers
+# 2. Page Headers
 st.title("📚 MS Office 2016: Complete Training Guide")
 st.caption("A foundational training manual by Srinivasta — open to learners of all ages.")
 
@@ -24,7 +25,7 @@ with st.sidebar:
       * 150 pages of training
       * Located up to **Page 259**
     
-    - **4. Microsoft PowerPoint**
+    - **3. Microsoft PowerPoint**
       * 63 pages of training
       * Located up to **Page 322**
     """)
@@ -40,21 +41,29 @@ with st.sidebar:
         "regarding the content of your training."
     )
 
-# 4. Direct download URL from your published GitHub Release
+# 4. Your Permanent Live Release Download Link
 pdf_url = "https://github.com"
 
-# 5. Native Streamlit Rendering (Bypasses Google Iframe Bugs)
+# 5. Safe Base64 PDF Render Engine
 try:
-    # Safely pull the bytes through Python request backend
+    # Safely download the book into memory in the backend background
     response = requests.get(pdf_url)
+    
     if response.status_code == 200:
         pdf_bytes = response.content
         
-        # Display the PDF using Streamlit's official PDF viewer engine
-        st.pdf(pdf_bytes, height=950)
+        # Encode bytes to base64 string to keep it from corrupting
+        base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+        
+        # Create an unblockable native HTML container string
+        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="950" type="application/pdf"></iframe>'
+        
+        # Display the PDF onto the main viewport area
+        st.markdown(pdf_display, unsafe_allow_html=True)
         
         st.markdown("---")
-        # Direct Download Button
+        
+        # 6. Actionable Download Button for Anyone
         st.download_button(
             label="📥 Download Complete MS Office Training Book (PDF)",
             data=pdf_bytes,
@@ -63,6 +72,7 @@ try:
             type="primary"
         )
     else:
-        st.error(f"Cannot find the book.pdf asset. Status code: {response.status_code}")
+        st.error(f"Cannot connect to the file asset on GitHub. Server responded with status code: {response.status_code}")
+
 except Exception as e:
-    st.error(f"Error loading the book viewer: {e}")
+    st.error(f"An error occurred while rendering the document: {e}")
