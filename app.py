@@ -1,5 +1,4 @@
 import streamlit as st
-import requests
 
 # 1. Universal Layout Settings
 st.set_page_config(
@@ -40,33 +39,15 @@ with st.sidebar:
         "regarding the content of your training."
     )
 
-# 4. Your Unblocked GitHub Pages Live URL
+# 4. Your Unblocked GitHub Pages Live Link
 pdf_url = "https://github.io"
 
-# 5. Core PDF View Rendering & Download System
-try:
-    # Read the file data securely through a standard web request
-    response = requests.get(pdf_url)
-    pdf_bytes = response.content
-    
-    # Check if the file fetched successfully
-    if response.status_code == 200:
-        # Display the PDF on the page
-        st.pdf(pdf_bytes, height=950)
-        
-        # Add a clean spacing layout element
-        st.write("")
-        
-        # 6. Actionable Download Button for Anyone
-        st.download_button(
-            label="📥 Download Complete MS Office Training Book (PDF)",
-            data=pdf_bytes,
-            file_name="MS_Office_2016_Training_Guide.pdf",
-            mime="application/pdf",
-            type="primary"  # Makes the button stand out in bright color
-        )
-    else:
-        st.error("Could not find the book file. Please ensure GitHub Pages is turned on in your repository settings.")
-        
-except Exception as e:
-    st.error("Could not load the PDF file. Please verify that your public GitHub repository is live.")
+# 5. Safe Multi-Page Heavy Iframe Embed (Bypasses the 25MB local crash limit)
+google_view_url = f"https://google.com{pdf_url}&embedded=true"
+
+# Embed the large book viewer cleanly
+st.components.v1.iframe(google_view_url, height=900, scrolling=True)
+
+# 6. Instant Direct File Download
+st.markdown("---")
+st.markdown(f'<a href="{pdf_url}" target="_blank"><button style="background-color:#FF4B4B; color:white; border:none; padding:12px 24px; border-radius:4px; font-weight:bold; cursor:pointer;">📥 Click Here to Download Full PDF Book (25MB)</button></a>', unsafe_allow_html=True)
