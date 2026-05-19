@@ -41,24 +41,26 @@ with st.sidebar:
         "regarding the content of your training."
     )
 
-# 4. UNBLOCKED PUBLIC API LINK
-# This format tells the backend code to safely stream file data directly
+# 4. Direct, Reliable Browser Release Download Link
 pdf_url = "https://github.com"
 
-# 5. Safe base64 PDF Stream Engine
+# 5. Robust Chunked Download & Rendering System
 try:
-    # Query the repository configuration to locate the raw file download link
-    release_info = requests.get(pdf_url).json()
+    # Add a real browser identity header to completely bypass automated script blocks
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    }
     
-    # Grab the true download link asset from the JSON package array
-    download_url = release_info["assets"][0]["browser_download_url"]
-    
-    # Fetch the actual 25MB file bytes securely
-    response = requests.get(download_url, allow_redirects=True)
+    # Stream the file to handle the 25MB load without causing network timeouts
+    response = requests.get(pdf_url, headers=headers, allow_redirects=True, stream=True)
     
     if response.status_code == 200:
-        pdf_bytes = response.content
-        
+        pdf_bytes = bytearray()
+        for chunk in response.iter_content(chunk_size=4096):
+            if chunk:
+                pdf_bytes.extend(chunk)
+                
+        # Confirm that the returned bytes form a valid binary PDF document
         if pdf_bytes.startswith(b"%PDF"):
             # Clean binary encoding conversion step
             base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
@@ -70,15 +72,16 @@ try:
             # 6. Functional Direct Downloader Action Button
             st.download_button(
                 label="📥 Download Complete MS Office Training Book (PDF)",
-                data=pdf_bytes,
+                data=bytes(pdf_bytes),
                 file_name="MS_Office_2016_Training_Guide.pdf",
                 mime="application/pdf",
                 type="primary"
             )
         else:
-            st.error("The downloaded file stream is corrupted. Please refresh the app panel.")
+            st.error("Data verification error. GitHub is sending an HTML webpage layout instead of raw book bytes.")
+            st.info("Please confirm that your release file is exactly named 'book.pdf' inside your v1.0.0 tag.")
     else:
         st.error(f"Cannot connect to the download database stream. Server code: {response.status_code}")
 
 except Exception as e:
-    st.error(f"Waiting for deployment link synchronization: {e}")
+    st.error(f"An unexpected error occurred while loading the app layout: {e}")
