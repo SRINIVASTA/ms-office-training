@@ -1,3 +1,2 @@
-streamlit
-markdown-it-py
+streamlit[pdf]
 requests
