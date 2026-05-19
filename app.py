@@ -1,6 +1,4 @@
 import streamlit as st
-import requests
-import base64
 
 # 1. Universal Layout Settings
 st.set_page_config(
@@ -41,47 +39,25 @@ with st.sidebar:
         "regarding the content of your training."
     )
 
-# 4. Direct, Reliable Browser Release Download Link
-pdf_url = "https://github.com"
-
-# 5. Robust Chunked Download & Rendering System
+# 4. Load the PDF directly using your exact filename
 try:
-    # Add a real browser identity header to completely bypass automated script blocks
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
+    with open("MS Office Reading Material.pdf", "rb") as f:
+        pdf_bytes = f.read()
+        
+    # Display the PDF on the page seamlessly
+    st.pdf(pdf_bytes, height=950)
     
-    # Stream the file to handle the 25MB load without causing network timeouts
-    response = requests.get(pdf_url, headers=headers, allow_redirects=True, stream=True)
+    st.markdown("---")
     
-    if response.status_code == 200:
-        pdf_bytes = bytearray()
-        for chunk in response.iter_content(chunk_size=4096):
-            if chunk:
-                pdf_bytes.extend(chunk)
-                
-        # Confirm that the returned bytes form a valid binary PDF document
-        if pdf_bytes.startswith(b"%PDF"):
-            # Clean binary encoding conversion step
-            base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-            pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="950" type="application/pdf"></iframe>'
-            st.markdown(pdf_display, unsafe_allow_html=True)
-            
-            st.markdown("---")
-            
-            # 6. Functional Direct Downloader Action Button
-            st.download_button(
-                label="📥 Download Complete MS Office Training Book (PDF)",
-                data=bytes(pdf_bytes),
-                file_name="MS_Office_2016_Training_Guide.pdf",
-                mime="application/pdf",
-                type="primary"
-            )
-        else:
-            st.error("Data verification error. GitHub is sending an HTML webpage layout instead of raw book bytes.")
-            st.info("Please confirm that your release file is exactly named 'book.pdf' inside your v1.0.0 tag.")
-    else:
-        st.error(f"Cannot connect to the download database stream. Server code: {response.status_code}")
-
+    # 5. Direct Native Download Button
+    st.download_button(
+        label="📥 Download Complete MS Office Training Book (PDF)",
+        data=pdf_bytes,
+        file_name="MS_Office_2016_Training_Guide.pdf",
+        mime="application/pdf",
+        type="primary"
+    )
+except FileNotFoundError:
+    st.error("Missing file: Make sure 'MS Office Reading Material.pdf' is uploaded to the exact same folder as your 'app.py' on GitHub.")
 except Exception as e:
-    st.error(f"An unexpected error occurred while loading the app layout: {e}")
+    st.error(f"An unexpected error occurred: {e}")
