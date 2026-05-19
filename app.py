@@ -1,13 +1,13 @@
 import streamlit as st
 
-# 1. Universal Layout Settings
+# 1. Page Configuration Settings
 st.set_page_config(
     page_title="MS Office 2016: Complete Training Guide",
     page_icon="📚",
     layout="wide"
 )
 
-# 2. Page Headers
+# 2. Main Page Headers
 st.title("📚 MS Office 2016: Complete Training Guide")
 st.caption("A foundational training manual by Srinivasta — open to learners of all ages.")
 
@@ -39,15 +39,14 @@ with st.sidebar:
         "regarding the content of your training."
     )
 
-# 4. Your Unblocked GitHub Pages Live Link
-pdf_url = "https://github.io"
+# 4. Your Permanent Live Release Link
+# This pulls directly from the v1.0.0 release asset you just published
+pdf_url = "https://github.com"
 
-# 5. Safe Multi-Page Heavy Iframe Embed (Bypasses the 25MB local crash limit)
+# 5. Safe Embedded Document Viewer Layout
 google_view_url = f"https://google.com{pdf_url}&embedded=true"
+st.components.v1.iframe(google_view_url, height=950, scrolling=True)
 
-# Embed the large book viewer cleanly
-st.components.v1.iframe(google_view_url, height=900, scrolling=True)
-
-# 6. Instant Direct File Download
+# 6. Actionable Download Button for Anyone
 st.markdown("---")
 st.markdown(f'<a href="{pdf_url}" target="_blank"><button style="background-color:#FF4B4B; color:white; border:none; padding:12px 24px; border-radius:4px; font-weight:bold; cursor:pointer;">📥 Click Here to Download Full PDF Book (25MB)</button></a>', unsafe_allow_html=True)
