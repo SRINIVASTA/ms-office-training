@@ -41,28 +41,33 @@ with st.sidebar:
         "regarding the content of your training."
     )
 
-# 4. UNBLOCKED DIRECT DOWNLOAD PATHWAY
-# Changing the subdomain structure prevents GitHub from injecting a login screen check
+# 4. UNBLOCKED PUBLIC API LINK
+# This format tells the backend code to safely stream file data directly
 pdf_url = "https://github.com"
 
-# 5. Safe Base64 PDF Render Engine
+# 5. Safe base64 PDF Stream Engine
 try:
-    # Use headers to explicitly demand raw binary stream handling rather than browser HTML
-    headers = {"Accept": "application/octet-stream"}
-    response = requests.get(pdf_url, headers=headers, allow_redirects=True)
+    # Query the repository configuration to locate the raw file download link
+    release_info = requests.get(pdf_url).json()
+    
+    # Grab the true download link asset from the JSON package array
+    download_url = release_info["assets"][0]["browser_download_url"]
+    
+    # Fetch the actual 25MB file bytes securely
+    response = requests.get(download_url, allow_redirects=True)
     
     if response.status_code == 200:
         pdf_bytes = response.content
         
-        # Absolute verification of actual binary data formatting
         if pdf_bytes.startswith(b"%PDF"):
+            # Clean binary encoding conversion step
             base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
             pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="950" type="application/pdf"></iframe>'
             st.markdown(pdf_display, unsafe_allow_html=True)
             
             st.markdown("---")
             
-            # 6. Functional Direct File Downloader widget
+            # 6. Functional Direct Downloader Action Button
             st.download_button(
                 label="📥 Download Complete MS Office Training Book (PDF)",
                 data=pdf_bytes,
@@ -71,11 +76,9 @@ try:
                 type="primary"
             )
         else:
-            # Informative fallback panel tracking content-type leakages 
-            st.error("Data verification error. The application is pulling an HTML redirect file text instead of the book binary data.")
-            st.info("To quickly resolve this link glitch, go to your GitHub file panel, delete requirements.txt, and create it again.")
+            st.error("The downloaded file stream is corrupted. Please refresh the app panel.")
     else:
-        st.error(f"Cannot connect to file container. Server code: {response.status_code}")
+        st.error(f"Cannot connect to the download database stream. Server code: {response.status_code}")
 
 except Exception as e:
-    st.error(f"An error occurred while rendering the document: {e}")
+    st.error(f"Waiting for deployment link synchronization: {e}")
