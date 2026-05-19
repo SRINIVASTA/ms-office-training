@@ -42,8 +42,8 @@ with st.sidebar:
     )
 
 # 4. Your Permanent Live Release Download Link
-pdf_url = "https://github.com"
-
+# pdf_url = "https://github.com"
+pdf_url = "https://githubusercontent.com"
 # 5. Safe Base64 PDF Render Engine
 try:
     # Safely download the book into memory in the backend background
