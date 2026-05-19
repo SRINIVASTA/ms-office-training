@@ -42,35 +42,39 @@ with st.sidebar:
     )
 
 # 4. Your Permanent Live Release Download Link
-# pdf_url = "https://github.com"
-pdf_url = "https://githubusercontent.com"
+pdf_url = "https://github.com"
+
 # 5. Safe Base64 PDF Render Engine
 try:
-    # Safely download the book into memory in the backend background
-    response = requests.get(pdf_url)
+    # CRITICAL FIX: allow_redirects=True forces Python to follow GitHub's download route
+    response = requests.get(pdf_url, allow_redirects=True)
     
     if response.status_code == 200:
         pdf_bytes = response.content
         
-        # Encode bytes to base64 string to keep it from corrupting
-        base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-        
-        # Create an unblockable native HTML container string
-        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="950" type="application/pdf"></iframe>'
-        
-        # Display the PDF onto the main viewport area
-        st.markdown(pdf_display, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        
-        # 6. Actionable Download Button for Anyone
-        st.download_button(
-            label="📥 Download Complete MS Office Training Book (PDF)",
-            data=pdf_bytes,
-            file_name="MS_Office_2016_Training_Guide.pdf",
-            mime="application/pdf",
-            type="primary"
-        )
+        # Verify that we actually downloaded a PDF binary and not an HTML text page
+        if pdf_bytes.startswith(b"%PDF"):
+            # Encode bytes to base64 string to render smoothly inside the frame
+            base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+            
+            # Create an unblockable native HTML container string
+            pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="950" type="application/pdf"></iframe>'
+            
+            # Display the PDF onto the main viewport area
+            st.markdown(pdf_display, unsafe_allow_html=True)
+            
+            st.markdown("---")
+            
+            # 6. Actionable Download Button for Anyone
+            st.download_button(
+                label="📥 Download Complete MS Office Training Book (PDF)",
+                data=pdf_bytes,
+                file_name="MS_Office_2016_Training_Guide.pdf",
+                mime="application/pdf",
+                type="primary"
+            )
+        else:
+            st.error("Downloaded file data is invalid. GitHub redirected the script to a login or error page.")
     else:
         st.error(f"Cannot connect to the file asset on GitHub. Server responded with status code: {response.status_code}")
 
