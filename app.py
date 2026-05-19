@@ -1,4 +1,5 @@
 import streamlit as st
+import requests
 
 # 1. Page Configuration Settings
 st.set_page_config(
@@ -23,7 +24,7 @@ with st.sidebar:
       * 150 pages of training
       * Located up to **Page 259**
     
-    - **3. Microsoft PowerPoint**
+    - **4. Microsoft PowerPoint**
       * 63 pages of training
       * Located up to **Page 322**
     """)
@@ -39,14 +40,29 @@ with st.sidebar:
         "regarding the content of your training."
     )
 
-# 4. Your Permanent Live Release Link
-# This pulls directly from the v1.0.0 release asset you just published
+# 4. Direct download URL from your published GitHub Release
 pdf_url = "https://github.com"
 
-# 5. Safe Embedded Document Viewer Layout
-google_view_url = f"https://google.com{pdf_url}&embedded=true"
-st.components.v1.iframe(google_view_url, height=950, scrolling=True)
-
-# 6. Actionable Download Button for Anyone
-st.markdown("---")
-st.markdown(f'<a href="{pdf_url}" target="_blank"><button style="background-color:#FF4B4B; color:white; border:none; padding:12px 24px; border-radius:4px; font-weight:bold; cursor:pointer;">📥 Click Here to Download Full PDF Book (25MB)</button></a>', unsafe_allow_html=True)
+# 5. Native Streamlit Rendering (Bypasses Google Iframe Bugs)
+try:
+    # Safely pull the bytes through Python request backend
+    response = requests.get(pdf_url)
+    if response.status_code == 200:
+        pdf_bytes = response.content
+        
+        # Display the PDF using Streamlit's official PDF viewer engine
+        st.pdf(pdf_bytes, height=950)
+        
+        st.markdown("---")
+        # Direct Download Button
+        st.download_button(
+            label="📥 Download Complete MS Office Training Book (PDF)",
+            data=pdf_bytes,
+            file_name="MS_Office_2016_Training_Guide.pdf",
+            mime="application/pdf",
+            type="primary"
+        )
+    else:
+        st.error(f"Cannot find the book.pdf asset. Status code: {response.status_code}")
+except Exception as e:
+    st.error(f"Error loading the book viewer: {e}")
