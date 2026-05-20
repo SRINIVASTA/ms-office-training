@@ -1,7 +1,6 @@
 import io
 import streamlit as st
 from pypdf import PdfReader, PdfWriter
-from streamlit_pdf_viewer import pdf_viewer
 
 # 1. Universal Layout Settings
 st.set_page_config(
@@ -9,17 +8,6 @@ st.set_page_config(
     page_icon="📚",
     layout="wide"
 )
-
-# Global CSS override to prevent viewport clipping issues
-st.markdown("""
-<style>
-    [data-testid="stCustomComponentV1"] {
-        overflow-x: auto !important;
-        display: block;
-        width: 100%;
-    }
-</style>
-""", unsafe_allow_html=True)
 
 # Initialize persistent session state for progress tracking
 if "progress_tracker" not in st.session_state:
@@ -33,36 +21,33 @@ st.caption("A foundational training manual by Srinivasta — open to learners of
 with st.sidebar:
     st.header("📖 Navigation Controls")
     
-    # PRODUCTION READY DICTIONARY: Populated with verified global tutorial IDs
+    # Accurate Chapter Index Mapping matching the structure of the training manual
     chapter_options = {
         "1. Microsoft Word (Pages 5 - 109)": {
             "start": 5, "end": 109, "label": "MS Word", "filename": "MS_Word_Training_Guide.pdf",
-            "youtube_id": "S-nHYzK-BVg", 
-            "sections": [
-                {"name": "Word Basics & Interface", "seconds": 0},
-                {"name": "Text Formatting & Styles", "seconds": 300},
-                {"name": "Tables & Graphics", "seconds": 900},
-                {"name": "Page Layout & Printing", "seconds": 1500}
+            "slides": [
+                {"title": "Welcome to Word 2016", "desc": "Exploring the Quick Access Toolbar, Ribbon tabs, and workspace setup."},
+                {"title": "Text Layout & Typography", "desc": "Mastering font adjustments, paragraphs, alignment, and formatting styles."},
+                {"title": "Tables & Graphic Design", "desc": "How to insert tabular grids, style borders, and format illustrations safely."},
+                {"title": "Document Finalization", "desc": "Managing page margins, page orientation, headers, footers, and print tracking."}
             ]
         },
         "2. Microsoft Excel (Pages 110 - 259)": {
             "start": 110, "end": 259, "label": "MS Excel", "filename": "MS_Excel_Training_Guide.pdf",
-            "youtube_id": "rwbho0CgEAE",
-            "sections": [
-                {"name": "Excel Spreadsheet Basics", "seconds": 0},
-                {"name": "Formulas & Basic Functions", "seconds": 600},
-                {"name": "Data Sorting & Filtering", "seconds": 1800},
-                {"name": "Charts & Graphs", "seconds": 2400}
+            "slides": [
+                {"title": "Excel Interface & Cells", "desc": "Understanding rows, columns, unique cell addresses, and workbook navigation."},
+                {"title": "Formulas & Basic Math", "desc": "Writing structural syntax using SUM, AVERAGE, COUNT, and standard operations."},
+                {"title": "Data Sorting & Filters", "desc": "Organizing massive datasets alphabetically, numerically, or via custom filters."},
+                {"title": "Charts & Visual Graphics", "desc": "Transforming clean data cells into standard Pie, Bar, and Line charts instantly."}
             ]
         },
         "3. Microsoft PowerPoint (Pages 260 - 323)": {
             "start": 260, "end": 323, "label": "MS PowerPoint", "filename": "MS_PowerPoint_Training_Guide.pdf",
-            "youtube_id": "XF34-cAbMMw",
-            "sections": [
-                {"name": "Presentation Basics & Layouts", "seconds": 0},
-                {"name": "Adding Animations & Transitions", "seconds": 450},
-                {"name": "Inserting Media & Objects", "seconds": 900},
-                {"name": "Slide Show Delivery", "seconds": 1350}
+            "slides": [
+                {"title": "Slide Foundations", "desc": "Choosing structural layout designs, adding new slides, and placeholder control."},
+                {"title": "Animations & Transitions", "desc": "Applying dynamic cinematic movements between slide deck switches cleanly."},
+                {"title": "Media, Audio & Graphics", "desc": "Inserting external images, recording shapes, and adding media attachments."},
+                {"title": "Delivering Presentations", "desc": "Using Presenter View, timeline controls, laser tools, and slide loops."}
             ]
         }
     }
@@ -76,8 +61,7 @@ with st.sidebar:
     target_end = chapter_options[selected_chapter]["end"]
     chapter_name = chapter_options[selected_chapter]["label"]
     chapter_filename = chapter_options[selected_chapter]["filename"]
-    chapter_sections = chapter_options[selected_chapter]["sections"]
-    active_yt_id = chapter_options[selected_chapter]["youtube_id"]
+    chapter_slides = chapter_options[selected_chapter]["slides"]
     total_pages = target_end - target_start + 1
 
     page_state_key = f"current_page_{chapter_name}"
@@ -89,17 +73,17 @@ with st.sidebar:
     st.subheader("✅ Chapter Milestones")
     
     completed_count = 0
-    for section_obj in chapter_sections:
-        s_name = section_obj["name"]
-        unique_key = f"{chapter_name}_{s_name}"
+    for slide_item in chapter_slides:
+        s_title = slide_item["title"]
+        unique_key = f"{chapter_name}_{s_title}"
         is_checked = st.session_state.progress_tracker.get(unique_key, False)
-        current_state = st.checkbox(s_name, value=is_checked, key=f"cb_{unique_key}")
+        current_state = st.checkbox(s_title, value=is_checked, key=f"cb_{unique_key}")
         st.session_state.progress_tracker[unique_key] = current_state
         
         if current_state:
             completed_count += 1
             
-    completion_rate = completed_count / len(chapter_sections) if chapter_sections else 0
+    completion_rate = completed_count / len(chapter_slides) if chapter_slides else 0
     st.progress(completion_rate)
     st.write(f"Chapter Progress: {int(completion_rate * 100)}%")
 
@@ -114,6 +98,8 @@ try:
     local_current_page = st.session_state[page_state_key]
     global_pdf_page = (target_start - 1) + (local_current_page - 1)
     
+    # Safe rendering via raw data components to bypass Chrome Frame blocking bugs
+    import base64
     writer = PdfWriter()
     if global_pdf_page < len(reader.pages):
         writer.add_page(reader.pages[global_pdf_page])
@@ -121,16 +107,14 @@ try:
     chapter_pdf_buffer = io.BytesIO()
     writer.write(chapter_pdf_buffer)
     chapter_pdf_bytes = chapter_pdf_buffer.getvalue()
+    base64_pdf = base64.b64encode(chapter_pdf_bytes).decode('utf-8')
     
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # Render PDF Canvas Frame
-    pdf_viewer(
-        input=chapter_pdf_bytes,
-        width=zoom_level,
-        key=f"pdf_render_{chapter_name}_{local_current_page}"
-    )
+    # Display the clear training page content frame
+    pdf_display_style = f'<iframe src="data:application/pdf;base64,{base64_pdf}#toolbar=0&navpanes=0" width="{zoom_level}px" height="600px" style="border:1px solid #ccc; border-radius:4px;"></iframe>'
+    st.components.v1.html(pdf_display_style, height=610)
     
     st.markdown("---")
     
@@ -172,8 +156,8 @@ try:
 
     st.markdown("---")
     
-    # 6. FEATURE: Integrated Audio Shadow Text + Interactive Time Sync Video Frame (VIDEO DOWN)
-    st.subheader("🔊 Audio Assistant & Connected Video Engine")
+    # 6. FEATURE: Generated Video-Slideshow + Synced Shadow Voice Engine (VIDEO DOWN)
+    st.subheader("📺 Generated Dynamic Lesson Presentation Player")
     
     active_page_object = reader.pages[global_pdf_page]
     extracted_raw_text = active_page_object.extract_text()
@@ -182,110 +166,114 @@ try:
     if clean_text:
         js_safe_text = clean_text.replace('"', '\\"').replace('\n', ' ')
         
-        # Build interactive JavaScript Button structures matching section timestamp specifications
-        buttons_html = ""
-        for sec in chapter_sections:
-            buttons_html += f"""
-            <button onclick="seekVideo({sec['seconds']})" style="margin: 5px; padding: 6px 12px; background-color: #f0f2f6; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 500; color: #333;">
-                ⏱ Jump to: {sec['name']}
-            </button>
-            """
+        # Format our slide arrays into a clean JavaScript array literal
+        import json
+        js_slides_array = json.dumps(chapter_slides)
         
-        # FIXED IFRAME PATHWAY: Absolute syntax definition avoids cross-domain address parsing errors
-        html_speech_video_component = f"""
-        <div style="font-family: sans-serif; background-color: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+        # HTML5 + Canvas Presentation Player Component
+        html_presentation_component = f"""
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e24; padding: 25px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); color: white;">
             
-            <!-- Voice Panel Triggers -->
-            <div style="margin-bottom: 15px;">
-                <button id="btn-play" onclick="startReading()" style="padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 10px;">▶ Speak Page Text</button>
-                <button id="btn-stop" onclick="stopReading()" style="padding: 8px 16px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">⏹ Pause Voice</button>
+            <!-- Controls Overlay Toolbar -->
+            <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+                <button id="btn-play" onclick="startLessonVideo()" style="padding: 10px 20px; background-color: #2eb85c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: background 0.2s;">▶ Play Lesson</button>
+                <button id="btn-stop" onclick="stopLessonVideo()" style="padding: 10px 20px; background-color: #e55353; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: background 0.2s;">⏹ Pause Lesson</button>
             </div>
             
-            <!-- Moving Highlight Shadow Reading Screen Frame -->
-            <div id="reading-text-box" style="font-size: 1.1rem; line-height: 1.7rem; color: #333; margin-bottom: 15px; max-height: 100px; overflow-y: auto; background: white; padding: 10px; border: 1px solid #eee; border-radius: 4px;"></div>
+            <!-- Audio Voice Box containing Text Shadows -->
+            <div id="shadow-text-screen" style="font-size: 1.1rem; line-height: 1.8rem; color: #fff; margin-bottom: 20px; max-height: 90px; overflow-y: auto; background: #2a2a35; padding: 12px; border-left: 5px solid #321fdb; border-radius: 4px; box-sizing: border-box;"></div>
             
-            <!-- Dynamic Video Timeline Jumping Quick-Links Navigation Tray -->
-            <div style="margin-bottom: 20px; background-color: #fff; padding: 10px; border: 1px solid #eee; border-radius: 4px;">
-                <p style="margin: 0 0 8px 5px; font-size: 0.9rem; font-weight: bold; color: #555;">🎞 Lesson Chapters (Click to Sync Video Timeline):</p>
-                {buttons_html}
-            </div>
-
-            <!-- Absolute secure embed structure removes formatting errors -->
-            <div style="text-align: center; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; background: #000; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-                <iframe id="player-iframe" 
-                        src="https://youtube.com{active_yt_id}?enablejsapi=1&rel=0" 
-                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen>
-                </iframe>
+            <!-- Generated Presentation Video Canvas Deck -->
+            <div id="video-canvas-deck" style="background: linear-gradient(135deg, #321fdb 0%, #1f1487 100%); height: 350px; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; text-align: center; box-shadow: inset 0 0 40px rgba(0,0,0,0.5); transition: all 0.5s ease;">
+                <h1 id="slide-title" style="font-size: 2.8rem; margin: 0 0 15px 0; font-weight: 700; text-shadow: 2px 4px 10px rgba(0,0,0,0.4); letter-spacing: 1px;">Ready to Begin</h1>
+                <p id="slide-desc" style="font-size: 1.4rem; max-width: 600px; line-height: 2rem; color: #ebedef; text-shadow: 1px 2px 5px rgba(0,0,0,0.3);">Click 'Play Lesson' to start the voice tracking and visual animation deck.</p>
             </div>
         </div>
 
         <script>
             const textToRead = "{js_safe_text}";
-            const textBox = document.getElementById("reading-text-box");
-            const iframe = document.getElementById("player-iframe");
+            const textBox = document.getElementById("shadow-text-screen");
+            const slideTitle = document.getElementById("slide-title");
+            const slideDesc = document.getElementById("slide-desc");
+            const canvasDeck = document.getElementById("video-canvas-deck");
             
+            const slidesData = {js_slides_array};
             const wordsArray = textToRead.split(" ");
             textBox.innerHTML = wordsArray.map((word, idx) => `<span id="word-${{idx}}">${{word}}</span>`).join(" ");
             
             let synth = window.speechSynthesis;
             let utterance = null;
+            const totalWords = wordsArray.length;
+
+            // Beautiful fluid background color gradients to simulate dynamic video transitions
+            const dynamicGradients = [
+                "linear-gradient(135deg, #321fdb 0%, #1f1487 100%)",   // Royal Blue
+                "linear-gradient(135deg, #2eb85c 0%, #1b6d37 100%)",   // Office Green
+                "linear-gradient(135deg, #f9b115 0%, #9b6d03 100%)",   // Warning Amber
+                "linear-gradient(135deg, #636f83 0%, #2f3542 100%)"    // Premium Platinum Charcoal
+            ];
             
-            function startReading() {{
+            function startLessonVideo() {{
                 synth.cancel();
                 
                 utterance = new SpeechSynthesisUtterance(textToRead);
                 utterance.lang = 'en-US';
-                utterance.rate = 1.0;
+                utterance.rate = 0.95; // Clear corporate voice training pace
                 
                 utterance.onboundary = function(event) {{
                     if (event.name === 'word') {{
                         const charIndex = event.charIndex;
                         const textUpToChar = textToRead.substring(0, charIndex).trim();
-                        const wordCountIndex = textUpToChar ? textUpToChar.split(" ").length : 0;
+                        const currentWordIdx = textUpToChar ? textUpToChar.split(" ").length : 0;
                         
-                        document.querySelectorAll("#reading-text-box span").forEach(span => {{
+                        // 1. Refresh shadow tracker highlights
+                        document.querySelectorAll("#shadow-text-screen span").forEach(span => {{
                             span.style.backgroundColor = "transparent";
-                            span.style.boxShadow = "none";
+                            span.style.color = "#fff";
                         }});
                         
-                        const activeWordSpan = document.getElementById(`word-${{wordCountIndex}}`);
+                        const activeWordSpan = document.getElementById(`word-${{currentWordIdx}}`);
                         if (activeWordSpan) {{
-                            activeWordSpan.style.backgroundColor = "#ffeb3b";
-                            activeWordSpan.style.boxShadow = "0px 0px 6px #ffeb3b";
+                            activeWordSpan.style.backgroundColor = "#f9b115";
+                            activeWordSpan.style.color = "#000";
                             activeWordSpan.style.borderRadius = "3px";
+                        }}
+                        
+                        // 2. AUTOMATIC PRESENTATION VIDEO SLIDE FLIPPING
+                        // Calculates location ratio and automatically matches text to slide themes
+                        const completionRatio = currentWordIdx / totalWords;
+                        let slideTargetIdx = Math.floor(completionRatio * slidesData.length);
+                        if (slideTargetIdx >= slidesData.length) slideTargetIdx = slidesData.length - 1;
+                        
+                        // Dynamically morph the slide visual parameters seamlessly
+                        if(slidesData[slideTargetIdx]) {{
+                            slideTitle.innerText = slidesData[slideTargetIdx].title;
+                            slideDesc.innerText = slidesData[slideTargetIdx].desc;
+                            canvasDeck.style.background = dynamicGradients[slideTargetIdx % dynamicGradients.length];
                         }}
                     }}
                 }};
                 
                 utterance.onend = function() {{
-                    document.querySelectorAll("#reading-text-box span").forEach(span => {{
+                    document.querySelectorAll("#shadow-text-screen span").forEach(span => {{
                         span.style.backgroundColor = "transparent";
-                        span.style.boxShadow = "none";
                     }});
+                    slideTitle.innerText = "Lesson Completed!";
+                    slideDesc.innerText = "Excellent tracking momentum. Click 'Next Page' or advance to your next milestone checklist item.";
+                    canvasDeck.style.background = "linear-gradient(135deg, #463077 0%, #251742 100%)";
                 }};
                 
                 synth.speak(utterance);
-                
-                // Secure postMessage communication trigger
-                iframe.contentWindow.postMessage('{{\"event\":\"command\",\"func\":\"playVideo\",\"args\":[]}}', '*');
             }}
             
-            function stopReading() {{
+            function stopLessonVideo() {{
                 synth.cancel();
-                iframe.contentWindow.postMessage('{{\"event\":\"command\",\"func\":\"pauseVideo\",\"args\":[]}}', '*');
-            }}
-            
-            function seekVideo(seconds) {{
-                iframe.contentWindow.postMessage('{{\"event\":\"command\",\"func\":\"seekTo\",\"args\":[' + seconds + ', true]}}', '*');
-                iframe.contentWindow.postMessage('{{\"event\":\"command\",\"func\":\"playVideo\",\"args\":[]}}', '*');
             }}
         </script>
         """
-        st.components.v1.html(html_speech_video_component, height=750, scrolling=True)
+        st.components.v1.html(html_presentation_component, height=600, scrolling=False)
     else:
-        st.caption("ℹ️ No text found on this page to feed the interactive tracking component.")
+        st.caption("ℹ️ No textual content exists on this layout page to power the automation presentation video deck.")
 
     st.markdown("---")
     
