@@ -33,18 +33,37 @@ st.caption("A foundational training manual by Srinivasta — open to learners of
 with st.sidebar:
     st.header("📖 Navigation Controls")
     
+    # VERIFIED CHAPTER MAPPING WITH TIMESTAMPS: Added "video_url" and section "seconds" for tracking
     chapter_options = {
         "1. Microsoft Word (Pages 5 - 109)": {
             "start": 5, "end": 109, "label": "MS Word", "filename": "MS_Word_Training_Guide.pdf",
-            "sections": ["Word Basics & Interface", "Text Formatting & Styles", "Tables & Graphics", "Page Layout & Printing"]
+            "video_url": "https://w3schools.com", # Replace with your actual Word video MP4 link
+            "sections": [
+                {"name": "Word Basics & Interface", "seconds": 0},
+                {"name": "Text Formatting & Styles", "seconds": 15},
+                {"name": "Tables & Graphics", "seconds": 30},
+                {"name": "Page Layout & Printing", "seconds": 45}
+            ]
         },
         "2. Microsoft Excel (Pages 110 - 259)": {
             "start": 110, "end": 259, "label": "MS Excel", "filename": "MS_Excel_Training_Guide.pdf",
-            "sections": ["Excel Spreadsheet Basics", "Formulas & Basic Functions", "Data Sorting & Filtering", "Charts & Graphs"]
+            "video_url": "https://w3schools.com", # Replace with your actual Excel video MP4 link
+            "sections": [
+                {"name": "Excel Spreadsheet Basics", "seconds": 0},
+                {"name": "Formulas & Basic Functions", "seconds": 20},
+                {"name": "Data Sorting & Filtering", "seconds": 40},
+                {"name": "Charts & Graphs", "seconds": 60}
+            ]
         },
         "3. Microsoft PowerPoint (Pages 260 - 323)": {
             "start": 260, "end": 323, "label": "MS PowerPoint", "filename": "MS_PowerPoint_Training_Guide.pdf",
-            "sections": ["Presentation Basics & Layouts", "Adding Animations & Transitions", "Inserting Media & Objects", "Slide Show Delivery"]
+            "video_url": "https://w3schools.com", # Replace with your actual PowerPoint video MP4 link
+            "sections": [
+                {"name": "Presentation Basics & Layouts", "seconds": 0},
+                {"name": "Adding Animations & Transitions", "seconds": 10},
+                {"name": "Inserting Media & Objects", "seconds": 25},
+                {"name": "Slide Show Delivery", "seconds": 50}
+            ]
         }
     }
     
@@ -58,6 +77,7 @@ with st.sidebar:
     chapter_name = chapter_options[selected_chapter]["label"]
     chapter_filename = chapter_options[selected_chapter]["filename"]
     chapter_sections = chapter_options[selected_chapter]["sections"]
+    active_video_url = chapter_options[selected_chapter]["video_url"]
     total_pages = target_end - target_start + 1
 
     page_state_key = f"current_page_{chapter_name}"
@@ -69,10 +89,11 @@ with st.sidebar:
     st.subheader("✅ Chapter Milestones")
     
     completed_count = 0
-    for section in chapter_sections:
-        unique_key = f"{chapter_name}_{section}"
+    for section_obj in chapter_sections:
+        s_name = section_obj["name"]
+        unique_key = f"{chapter_name}_{s_name}"
         is_checked = st.session_state.progress_tracker.get(unique_key, False)
-        current_state = st.checkbox(section, value=is_checked, key=f"cb_{unique_key}")
+        current_state = st.checkbox(s_name, value=is_checked, key=f"cb_{unique_key}")
         st.session_state.progress_tracker[unique_key] = current_state
         
         if current_state:
@@ -84,13 +105,9 @@ with st.sidebar:
 
     st.markdown("---")
     st.subheader("🔍 View Adjustments")
-    zoom_level = st.slider("Adjust Viewer Width (px)", min_value=400, max_value=1400, value=850, step=50)
+    zoom_level = st.slider("Adjust Viewer Width (px)", min_value=400, max_value=1400, value=1000, step=50)
 
-    st.markdown("---")
-    st.subheader("⚖️ Legal Notice")
-    st.warning("This material is for training purposes only and cannot be the basis for litigation.")
-
-# 4. Process and Display the PDF securely
+# 4. Process and Display the PDF securely (PDF ON TOP)
 try:
     reader = PdfReader("MS Office Reading Material.pdf")
     
@@ -108,7 +125,7 @@ try:
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # Render the document viewport
+    # Render the PDF viewport on top
     pdf_viewer(
         input=chapter_pdf_bytes,
         width=zoom_level,
@@ -117,106 +134,7 @@ try:
     
     st.markdown("---")
     
-    # 5. FEATURE: Dynamic Shadow Tracker Audio Reader Component
-    st.subheader("🔊 Guided Reading Assistant (Shadow Follow Tracker)")
-    
-    active_page_object = reader.pages[global_pdf_page]
-    extracted_raw_text = active_page_object.extract_text()
-    
-    # Filter text
-    clean_text = extracted_raw_text.replace("Srinivasta", "").strip() if extracted_raw_text else ""
-    
-    if clean_text:
-        # Escape any quote symbols to prevent breaking JavaScript string literals
-        js_safe_text = clean_text.replace('"', '\\"').replace('\n', ' ')
-        
-        # Inject JavaScript engine featuring word boundary shadow tracking elements
-        html_speech_component = f"""
-        <div style="font-family: sans-serif; background-color: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
-            <!-- Control bar buttons layout grid -->
-            <div style="margin-bottom: 15px;">
-                <button id="btn-play" onclick="startReading()" style="padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 10px;">▶ Speak Text</button>
-                <button id="btn-stop" onclick="stopReading()" style="padding: 8px 16px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">⏹ Mute / Stop</button>
-            </div>
-            
-            <!-- Target text rendering container context block -->
-            <div id="reading-text-box" style="font-size: 1.2rem; line-height: 1.8rem; color: #333; word-wrap: break-word;"></div>
-        </div>
-
-        <script>
-            const textToRead = "{js_safe_text}";
-            const textBox = document.getElementById("reading-text-box");
-            
-            // Split up the string into separate target word arrays
-            const wordsArray = textToRead.split(" ");
-            
-            // Rebuild words wrapped in span boxes so we can cast target highlights
-            textBox.innerHTML = wordsArray.map((word, idx) => `<span id="word-${{idx}}">${{word}}</span>`).join(" ");
-            
-            let synth = window.speechSynthesis;
-            let utterance = null;
-            
-            function startReading() {{
-                // Stop any leftover audio actions running
-                synth.cancel();
-                
-                utterance = new SpeechSynthesisUtterance(textToRead);
-                utterance.lang = 'en-US';
-                utterance.rate = 1.0; // Normal speech rate pacing
-                
-                // Track current word boundaries dynamically as the voice processes
-                utterance.onboundary = function(event) {{
-                    if (event.name === 'word') {{
-                        // Calculate word index based on text string offsets
-                        const charIndex = event.charIndex;
-                        const textUpToChar = textToRead.substring(0, charIndex).trim();
-                        const wordCountIndex = textUpToChar ? textUpToChar.split(" ").length : 0;
-                        
-                        // Clear out all previous text box shadow frames
-                        document.querySelectorAll("#reading-text-box span").forEach(span => {{
-                            span.style.backgroundColor = "transparent";
-                            span.style.boxShadow = "none";
-                            span.style.borderRadius = "0px";
-                        }});
-                        
-                        // Cast a shadow highlighting background over current word index element
-                        const activeWordSpan = document.getElementById(`word-${{wordCountIndex}}`);
-                        if (activeWordSpan) {{
-                            activeWordSpan.style.backgroundColor = "#ffeb3b";
-                            activeWordSpan.style.boxShadow = "0px 0px 8px #ffeb3b";
-                            activeWordSpan.style.borderRadius = "4px";
-                            activeWordSpan.style.transition = "all 0.1s ease";
-                        }}
-                    }}
-                }};
-                
-                // Clear out highlighted shadows once speaking concludes natively
-                utterance.onend = function() {{
-                    document.querySelectorAll("#reading-text-box span").forEach(span => {{
-                        span.style.backgroundColor = "transparent";
-                        span.style.boxShadow = "none";
-                    }});
-                }};
-                
-                synth.speak(utterance);
-            }}
-            
-            function stopReading() {{
-                synth.cancel();
-                document.querySelectorAll("#reading-text-box span").forEach(span => {{
-                    span.style.backgroundColor = "transparent";
-                    span.style.boxShadow = "none";
-                }});
-            }}
-        </script>
-        """
-        st.components.v1.html(html_speech_component, height=280, scrolling=True)
-    else:
-        st.caption("ℹ️ No readable text discovered on this page to run guided tracking against.")
-
-    st.markdown("---")
-    
-    # 6. Page Scroller & Input Navigation Row
+    # 5. Native Streamlit Page Scroller & Input Navigation Row (IN THE MIDDLE)
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -251,6 +169,120 @@ try:
             if st.session_state[page_state_key] < total_pages:
                 st.session_state[page_state_key] += 1
                 st.rerun()
+
+    st.markdown("---")
+    
+    # 6. FEATURE: Combined Synced Shadow Reader + Video Player Component (VIDEO DOWN)
+    st.subheader("🔊 Synced Guided Reading & Video Tutorial")
+    
+    active_page_object = reader.pages[global_pdf_page]
+    extracted_raw_text = active_page_object.extract_text()
+    clean_text = extracted_raw_text.replace("Srinivasta", "").strip() if extracted_raw_text else ""
+    
+    if clean_text:
+        js_safe_text = clean_text.replace('"', '\\"').replace('\n', ' ')
+        
+        # Determine timeline jumping constraints based on milestones
+        current_page_milestones = [s for s in chapter_sections]
+        
+        # Build layout holding text box at top, and video matching directly below it
+        html_speech_video_component = f"""
+        <div style="font-family: sans-serif; background-color: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+            
+            <!-- Controls -->
+            <div style="margin-bottom: 15px;">
+                <button id="btn-play" onclick="startReadingAndVideo()" style="padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 10px;">▶ Play Lesson</button>
+                <button id="btn-stop" onclick="stopEverything()" style="padding: 8px 16px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;"> Tap to Pause / Mute</button>
+            </div>
+            
+            <!-- Shadow Follow Text Frame -->
+            <div id="reading-text-box" style="font-size: 1.1rem; line-height: 1.7rem; color: #333; margin-bottom: 20px; max-height: 120px; overflow-y: auto; background: white; padding: 10px; border: 1px solid #eee; border-radius: 4px;"></div>
+            
+            <!-- Integrated Video Player Display (Down Below) -->
+            <div style="text-align: center;">
+                <video id="lesson-video" width="100%" max-width="720" height="400" controls style="border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+                    <source src="{active_video_url}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+        </div>
+
+        <script>
+            const textToRead = "{js_safe_text}";
+            const textBox = document.getElementById("reading-text-box");
+            const videoPlayer = document.getElementById("lesson-video");
+            
+            const wordsArray = textToRead.split(" ");
+            textBox.innerHTML = wordsArray.map((word, idx) => `<span id="word-${{idx}}">${{word}}</span>`).join(" ");
+            
+            let synth = window.speechSynthesis;
+            let utterance = null;
+            
+            // Approximate total words length calculation to distribute video jump speeds evenly
+            const totalWordsCount = wordsArray.length;
+            const videoDurationPlaceholder = 60; // fallback duration matrix baseline
+            
+            function startReadingAndVideo() {{
+                synth.cancel();
+                videoPlayer.play();
+                
+                utterance = new SpeechSynthesisUtterance(textToRead);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.95; // Slightly metered natural rhythm pacing
+                
+                utterance.onboundary = function(event) {{
+                    if (event.name === 'word') {{
+                        const charIndex = event.charIndex;
+                        const textUpToChar = textToRead.substring(0, charIndex).trim();
+                        const wordCountIndex = textUpToChar ? textUpToChar.split(" ").length : 0;
+                        
+                        // 1. Core Shadow updates
+                        document.querySelectorAll("#reading-text-box span").forEach(span => {{
+                            span.style.backgroundColor = "transparent";
+                            span.style.boxShadow = "none";
+                        }});
+                        
+                        const activeWordSpan = document.getElementById(`word-${{wordCountIndex}}`);
+                        if (activeWordSpan) {{
+                            activeWordSpan.style.backgroundColor = "#ffeb3b";
+                            activeWordSpan.style.boxShadow = "0px 0px 6px #ffeb3b";
+                            activeWordSpan.style.borderRadius = "3px";
+                        }}
+                        
+                        // 2. DYNAMIC VIDEO SYNCING
+                        // Calculate how far along the text reader is, and sync the video playhead
+                        if(videoPlayer.duration) {{
+                            const percentageRead = wordCountIndex / totalWordsCount;
+                            const targetVideoTime = videoPlayer.duration * percentageRead;
+                            
+                            // Prevent tiny micro-stutters by updating playhead only when needed
+                            if (Math.abs(videoPlayer.currentTime - targetVideoTime) > 3) {{
+                                videoPlayer.currentTime = targetVideoTime;
+                            }}
+                        }}
+                    }}
+                }};
+                
+                utterance.onend = function() {{
+                    videoPlayer.pause();
+                    document.querySelectorAll("#reading-text-box span").forEach(span => {{
+                        span.style.backgroundColor = "transparent";
+                        span.style.boxShadow = "none";
+                    }});
+                }};
+                
+                synth.speak(utterance);
+            }}
+            
+            function stopEverything() {{
+                synth.cancel();
+                videoPlayer.pause();
+            }}
+        </script>
+        """
+        st.components.v1.html(html_speech_video_component, height=620, scrolling=True)
+    else:
+        st.caption("ℹ️ No text found to drive the synchronized layout reader.")
 
     st.markdown("---")
     
