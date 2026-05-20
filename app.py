@@ -1,7 +1,7 @@
 import io
 import streamlit as st
 from pypdf import PdfReader, PdfWriter
-from pdf2image import convert_from_bytes
+from streamlit_pdf_viewer import pdf_viewer
 
 # 1. Universal Layout Settings
 st.set_page_config(
@@ -91,7 +91,7 @@ with st.sidebar:
     st.subheader("🔍 View Adjustments")
     zoom_level = st.slider("Adjust Document Size (px width)", min_value=400, max_value=1400, value=900, step=50)
 
-# 4. Process and Display the PDF securely via Image Conversion (UNBLOCKED FOR CHROME)
+# 4. Process and Display the PDF securely via streamlit-pdf-viewer (NO POPPLER REQUIRED)
 try:
     reader = PdfReader("MS Office Reading Material.pdf")
     
@@ -109,16 +109,12 @@ try:
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # FIXED: Convert the active PDF page bytes to a high-quality secure image stream
-    rendered_images = convert_from_bytes(chapter_pdf_bytes, dpi=120)
-    
-    if rendered_images:
-        # Create centering column architecture grid for presentation alignment
-        img_col1, img_col2, img_col3 = st.columns([1, 4, 1])
-        with img_col2:
-            st.image(rendered_images[0], width=zoom_level, use_container_width=False)
-    else:
-        st.error("Error reading file templates.")
+    # Render PDF Canvas Frame without utilizing poppler layers
+    pdf_viewer(
+        input=chapter_pdf_bytes,
+        width=zoom_level,
+        key=f"pdf_render_{chapter_name}_{local_current_page}"
+    )
         
     st.markdown("---")
     
