@@ -1,6 +1,7 @@
 import io
 import streamlit as st
 from pypdf import PdfReader, PdfWriter
+from streamlit_pdf_viewer import pdf_viewer
 
 # 1. Universal Layout Settings
 st.set_page_config(
@@ -71,6 +72,10 @@ with st.sidebar:
     st.progress(completion_rate)
     st.write(f"Chapter Progress: {int(completion_rate * 100)}%")
 
+    st.markdown("---")
+    st.subheader("🔍 View Adjustments")
+    zoom_level = st.slider("Adjust Document Size (px width)", min_value=400, max_value=1400, value=900, step=50)
+
 # 4. Process and Display the PDF
 try:
     # Read the master file directly from your main application folder safely
@@ -93,10 +98,11 @@ try:
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # FIXED: Streamlit's official unblockable layout engine component (Bypasses Chrome iFrame & Image Parse Errors)
-    # Renders your text as a high-fidelity vector layer to support browser audio engines
-    st.html_viewer = st.pdf_viewer(
+    # FIXED: Replaced st.pdf_viewer with independent native pdf_viewer function
+    # Renders your text as an unblockable, clean vector canvas layout
+    pdf_viewer(
         input=chapter_pdf_bytes,
+        width=zoom_level,
         key=f"native_viewer_{chapter_name}_{local_current_page}"
     )
 
