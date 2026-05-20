@@ -85,6 +85,15 @@ with st.sidebar:
     st.progress(completion_rate)
     st.write(f"Chapter Progress: {int(completion_rate * 100)}%")
 
+    # RESTORED FEATURE: Page 2 Verified Terms & Legal Clause box inside sidebar
+    st.markdown("---")
+    st.subheader("⚖️ Legal Notice")
+    st.warning(
+        "This material is for training purposes only and cannot be the "
+        "basis for litigation. This protects you from any legal issues "
+        "regarding the content of your training."
+    )
+
     st.markdown("---")
     st.subheader("🔍 View Adjustments")
     zoom_level = st.slider("Adjust Document Size (px width)", min_value=400, max_value=1400, value=900, step=50)
@@ -225,7 +234,7 @@ try:
                 st.session_state[page_state_key] += 1
                 st.rerun()
 
-    # 7. FIXED CONDITION: Quiz section unlocks ONLY on the very last page of the chapter
+    # 7. Quiz section unlocks ONLY on the very last page of the chapter
     if local_current_page == total_pages:
         st.markdown("---")
         st.header(f"📝 Interactive Mini-Quiz: {chapter_name}")
@@ -259,7 +268,6 @@ try:
                 if score == len(chapter_quiz):
                     st.balloons()
     else:
-        # Shown on pages 1 to 104 as a locked milestone teaser
         st.markdown("---")
         st.caption(f"🔒 **Chapter Mini-Quiz Locked**: Keep reading! The quiz panel will unlock automatically when you reach the final page of this training block (Page {total_pages}).")
 
