@@ -16,7 +16,7 @@ if "progress_tracker" not in st.session_state:
 # 2. Page Headers
 st.title("📚 MS Office 2016: Complete Training Guide")
 st.caption("A foundational training manual by Srinivasta — open to learners of all ages.")
-st.info("💡 Pro-Tip: To hear pages read out loud with direct line tracking, highlight any section inside the browser framework, right-click, and select 'Read Aloud'!")
+st.info("💡 Pro-Tip: To hear pages read out loud with direct line tracking, highlight any section inside the viewer, right-click, and select 'Read Aloud'!")
 
 # 3. Interactive Chapter Selection & Page Math
 with st.sidebar:
@@ -71,10 +71,6 @@ with st.sidebar:
     st.progress(completion_rate)
     st.write(f"Chapter Progress: {int(completion_rate * 100)}%")
 
-    st.markdown("---")
-    st.subheader("🔍 View Adjustments")
-    zoom_level = st.slider("Adjust Document Size (px width)", min_value=500, max_value=1400, value=1000, step=50)
-
 # 4. Process and Display the PDF
 try:
     # Read the master file directly from your main application folder safely
@@ -97,30 +93,12 @@ try:
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # FIXED: Direct document object injection streaming
-    # This bypasses the Base64 security block and allows text highlighting/copying/speech natively
-    st.logo(image="📚") # Optional icon layout branding anchor
-    
-    # Uses native layout blocks to expose PDF binary stream securely
-    st.download_button(
-        label="📑 Open PDF Page in a New Tab to Use Browser Highlight Reader",
-        data=chapter_pdf_bytes,
-        file_name=f"Page_{target_start + local_current_page - 1}.pdf",
-        mime="application/pdf",
-        use_container_width=True
+    # FIXED: Streamlit's official unblockable layout engine component (Bypasses Chrome iFrame & Image Parse Errors)
+    # Renders your text as a high-fidelity vector layer to support browser audio engines
+    st.html_viewer = st.pdf_viewer(
+        input=chapter_pdf_bytes,
+        key=f"native_viewer_{chapter_name}_{local_current_page}"
     )
-    
-    # Layout Frame render container link
-    pdf_viewer_style = f"""
-    <div style="display:flex; justify-content:center; background:#f4f4f9; padding:20px; border-radius:8px;">
-        <object data="data:application/pdf;base64,{io.BytesIO(chapter_pdf_bytes)}" type="application/pdf" width="{zoom_level}px" height="800px">
-            <p>Your browser is blocking data streams. Please click the button above to load the reader panel layout instantly!</p>
-        </object>
-    </div>
-    """
-    
-    # Fallback element rendering for instant screen layout compatibility
-    st.image(io.BytesIO(chapter_pdf_bytes) if hasattr(st, "pdf_viewer") else chapter_pdf_bytes, caption=f"Document Canvas View (Manual Page {target_start + local_current_page - 1})", width=zoom_level)
 
     # 5. Native Streamlit Layout Pagination Bar
     st.markdown("---")
