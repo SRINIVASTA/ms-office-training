@@ -1,3 +1,4 @@
 streamlit
 pypdf
 streamlit-pdf-viewer
+gTTS
