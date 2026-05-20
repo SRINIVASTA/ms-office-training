@@ -16,7 +16,6 @@ if "progress_tracker" not in st.session_state:
 # 2. Page Headers
 st.title("📚 MS Office 2016: Complete Training Guide")
 st.caption("A foundational training manual by Srinivasta — open to learners of all ages.")
-st.success("🎯 **UNBLOCKED INTERACTIVE MODE**: To hear pages read out loud with direct line tracking, simply select/highlight any sentence on the PDF page below with your mouse, right-click, and choose **'Read Aloud'** or open Chrome's Reading Mode!")
 
 # 3. Interactive Chapter Selection & Page Math
 with st.sidebar:
@@ -89,10 +88,97 @@ try:
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # FIXED: Handing raw bytes directly to native, secure unblockable layout feature
+    # Renders original graphic manual safely on top layer
     st.pdf(chapter_pdf_bytes)
 
-    # 5. Native Streamlit Layout Pagination Bar
+    # 5. HYBRID VOICE AND TRACKING SHADOW ACCESS CONTAINER (DIRECTLY BELOW THE PDF)
+    st.markdown("---")
+    st.subheader("🔊 Kindle-Style Tracking Shadow Text Assistant")
+    
+    active_page_object = reader.pages[global_pdf_page]
+    extracted_raw_text = active_page_object.extract_text()
+    
+    # Clean and parse typography layers
+    clean_text = extracted_raw_text.replace("Srinivasta", "").strip() if extracted_raw_text else ""
+    js_safe_text = clean_text.replace('"', '\\"').replace('\n', ' ') if clean_text else "No extractable text content discovered on this page layout template."
+    
+    html_tracking_component = f"""
+    <div style="font-family: 'Segoe UI', system-ui, sans-serif; background-color: #fcfbf7; padding: 25px; border-radius: 8px; border: 1px solid #e6e3da;">
+        
+        <!-- Interactive Controls Menu -->
+        <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+            <button id="btn-play" onclick="startAutomatedReading()" style="padding: 10px 22px; background-color: #fad160; color: #111; border: 1px solid #e6b422; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 0.95rem;">▶ Read Out Loud</button>
+            <button id="btn-stop" onclick="stopAutomatedReading()" style="padding: 10px 22px; background-color: #f0f2f6; color: #333; border: 1px solid #ccc; border-radius: 20px; cursor: pointer; font-weight: 500; font-size: 0.95rem;">⏸ Pause</button>
+            <span id="reading-tracker-status" style="margin-left: auto; font-size: 0.85rem; color: #666; font-weight: 500;">Status: Ready to assist</span>
+        </div>
+        
+        <!-- Kindle Readable Frame: Rebuilds text perfectly so browser engines can hook into coordinates -->
+        <div id="accessible-text-deck" style="font-size: 1.25rem; line-height: 2.1rem; color: #222; text-align: justify; font-family: Georgia, serif; max-height: 250px; overflow-y: auto; background: white; padding: 15px; border: 1px solid #eee; border-radius: 4px;"></div>
+    </div>
+
+    <script>
+        const textPayload = "{js_safe_text}";
+        const textDeck = document.getElementById("accessible-text-deck");
+        const trackingStatus = document.getElementById("reading-tracker-status");
+        
+        const textWordsArray = textPayload.split(" ");
+        textDeck.innerHTML = textWordsArray.map((word, idx) => `<span id="word-token-${{idx}}" style="padding: 1px 3px; margin: 0 1px; border-radius: 3px; transition: all 0.05s ease;">${{word}}</span>`).join(" ");
+        
+        let speechEngine = window.speechSynthesis;
+        let utterInstance = null;
+        
+        function startAutomatedReading() {{
+            speechEngine.cancel();
+            trackingStatus.innerText = "Status: Highlighting Tracking Cursor...";
+            trackingStatus.style.color = "#2eb85c";
+            
+            utterInstance = new SpeechSynthesisUtterance(textPayload);
+            utterInstance.lang = 'en-US';
+            utterInstance.rate = 0.95; // Steady audiobook delivery speed
+            
+            utterInstance.onboundary = function(event) {{
+                if (event.name === 'word') {{
+                    const characterOffset = event.charIndex;
+                    const runningSubstring = textPayload.substring(0, characterOffset).trim();
+                    const activeWordIndexPointer = runningSubstring ? runningSubstring.split(" ").length : 0;
+                    
+                    // Clear previous highlights
+                    document.querySelectorAll("#accessible-text-deck span").forEach(node => {{
+                        node.style.backgroundColor = "transparent";
+                        node.style.boxShadow = "none";
+                    }});
+                    
+                    // Cast smooth yellow tracking shadow over active spoken token
+                    const targetedNode = document.getElementById(`word-token-${{activeWordIndexPointer}}`);
+                    if (targetedNode) {{
+                        targetedNode.style.backgroundColor = "#fff2a3"; // Amazon signature yellow highlight
+                        targetedNode.style.boxShadow = "0 1px 5px #fff2a3";
+                        targetedNode.scrollIntoView({{ behavior: 'smooth', block: 'nearest' }});
+                    }}
+                }}
+            }};
+            
+            utterInstance.onend = function() {{
+                trackingStatus.innerText = "Status: Reading Completed";
+                trackingStatus.style.color = "#666";
+                document.querySelectorAll("#accessible-text-deck span").forEach(node => {{
+                    node.style.backgroundColor = "transparent";
+                }});
+            }};
+            
+            speechEngine.speak(utterInstance);
+        }}
+        
+        function stopAutomatedReading() {{
+            speechEngine.cancel();
+            trackingStatus.innerText = "Status: Paused";
+            trackingStatus.style.color = "#dc3545";
+        }}
+    </script>
+    """
+    st.components.v1.html(html_tracking_component, height=350, scrolling=False)
+
+    # 6. Native Streamlit Layout Pagination Bar
     st.markdown("---")
     col1, col2, col3 = st.columns(3)
     
@@ -131,7 +217,7 @@ try:
 
     st.markdown("---")
     
-    # 6. Chapter Manual Download Action Button
+    # 7. Chapter Manual Download Action Button
     full_chapter_writer = PdfWriter()
     for p_idx in range(target_start - 1, target_end):
         if p_idx < len(reader.pages):
