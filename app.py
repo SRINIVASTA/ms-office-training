@@ -89,13 +89,8 @@ try:
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # CRITICAL PRODUCTION UPGRADE: Uses Streamlit's official media layer.
-    # This renders an unblockable, ultra-sharp direct vector page layout.
-    # Users can natively interact with the document text to trigger browser voice tracking.
-    st.pdf(
-        data=chapter_pdf_bytes,
-        num_pages=1
-    )
+    # FIXED: Removed the 'num_pages' argument causing the unexpected keyword crash
+    st.pdf(data=chapter_pdf_bytes)
 
     # 5. Native Streamlit Layout Pagination Bar
     st.markdown("---")
