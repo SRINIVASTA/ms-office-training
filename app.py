@@ -111,8 +111,8 @@ try:
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # Render the native canvas element (Fixed: removed annotation_layer)
-    col_v1, col_v2, col_v3 = st.columns([1, 4, 1])
+    # Render the native canvas element (Fixed: Added integer 3 to st.columns)
+    col_v1, col_v2, col_v3 = st.columns(3)
     with col_v2:
         pdf_viewer(
             input=chapter_pdf_bytes,
@@ -122,8 +122,8 @@ try:
     
     st.markdown("---")
     
-    # 5. Native Streamlit Page Scroller Buttons below the Viewer
-    col1, col2, col3 = st.columns()
+    # 5. Native Streamlit Page Scroller Buttons below the Viewer (Fixed: Added integer 3 to st.columns)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         if st.button("⬅️ Previous Page", use_container_width=True):
