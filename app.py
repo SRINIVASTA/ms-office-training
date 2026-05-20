@@ -70,7 +70,7 @@ with st.sidebar:
         if current_state:
             completed_count += 1
             
-    completion_rate = completed_count / len(chapter_sections)
+    completion_rate = completed_count / len(chapter_sections) if chapter_sections else 0
     st.progress(completion_rate)
     st.write(f"Chapter Progress: {int(completion_rate * 100)}%")
 
@@ -111,13 +111,12 @@ try:
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # Render the native canvas element (bypasses Chrome iFrame block rules)
+    # Render the native canvas element (Fixed: removed annotation_layer)
     col_v1, col_v2, col_v3 = st.columns([1, 4, 1])
     with col_v2:
         pdf_viewer(
             input=chapter_pdf_bytes,
             width=zoom_level,
-            annotation_layer=False,
             pages_to_render=[1]
         )
     
