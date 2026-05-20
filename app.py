@@ -88,7 +88,7 @@ with st.sidebar:
     # RESTORED FEATURE: Page 2 Verified Terms & Legal Clause box inside sidebar
     st.markdown("---")
     st.subheader("⚖️ Legal Notice")
-        st.warning(
+    st.warning(
         "⚠️ **LEGAL DISCLAIMER & NOTICE**\n\n"
         "1. **Content Use**: This material is for foundational educational purposes only. "
         "It cannot be used as a basis for litigation, protecting the author and platform from legal disputes.\n\n"
