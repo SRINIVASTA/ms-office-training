@@ -10,6 +10,18 @@ st.set_page_config(
     layout="wide"
 )
 
+# FIXED: Global CSS override to prevent Chrome from clipping overflowing custom components
+st.markdown("""
+<style>
+    /* Force horizontal scrollbars if any custom component or canvas exceeds viewport borders */
+    [data-testid="stCustomComponentV1"] {
+        overflow-x: auto !important;
+        display: block;
+        width: 100%;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Initialize persistent session state for progress tracking
 if "progress_tracker" not in st.session_state:
     st.session_state.progress_tracker = {}
@@ -22,7 +34,7 @@ st.caption("A foundational training manual by Srinivasta — open to learners of
 with st.sidebar:
     st.header("📖 Navigation Controls")
     
-    # VERIFIED CHAPTER MAPPING: Perfectly matched to PDF table indices
+    # Chapter mapping matched to PDF table indices
     chapter_options = {
         "1. Microsoft Word (Pages 5 - 109)": {
             "start": 5, "end": 109, "label": "MS Word", "filename": "MS_Word_Training_Guide.pdf",
@@ -74,10 +86,10 @@ with st.sidebar:
     st.progress(completion_rate)
     st.write(f"Chapter Progress: {int(completion_rate * 100)}%")
 
-    # Dynamic Size Controls
+    # Dynamic Size Controls (Default adjusted to a safer 850px for smaller displays)
     st.markdown("---")
     st.subheader("🔍 View Adjustments")
-    zoom_level = st.slider("Adjust Viewer Width (px)", min_value=400, max_value=1400, value=1000, step=50)
+    zoom_level = st.slider("Adjust Viewer Width (px)", min_value=400, max_value=1400, value=850, step=50)
 
     st.markdown("---")
     # Page 2 Verified Legal Clause
@@ -121,7 +133,7 @@ try:
     st.markdown("---")
     
     # 5. Native Streamlit Page Scroller & Input Navigation Row
-    col1, col2, col3 = st.columns([2, 3, 2])
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         st.write("") # Spatial adjustment padding
