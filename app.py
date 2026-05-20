@@ -1,6 +1,7 @@
 import io
 import streamlit as st
 from pypdf import PdfReader, PdfWriter
+from pdf2image import convert_from_bytes
 
 # 1. Universal Layout Settings
 st.set_page_config(
@@ -21,7 +22,6 @@ st.caption("A foundational training manual by Srinivasta — open to learners of
 with st.sidebar:
     st.header("📖 Navigation Controls")
     
-    # Accurate Chapter Index Mapping matching the structure of the training manual
     chapter_options = {
         "1. Microsoft Word (Pages 5 - 109)": {
             "start": 5, "end": 109, "label": "MS Word", "filename": "MS_Word_Training_Guide.pdf",
@@ -89,17 +89,15 @@ with st.sidebar:
 
     st.markdown("---")
     st.subheader("🔍 View Adjustments")
-    zoom_level = st.slider("Adjust Viewer Width (px)", min_value=400, max_value=1400, value=1000, step=50)
+    zoom_level = st.slider("Adjust Document Size (px width)", min_value=400, max_value=1400, value=900, step=50)
 
-# 4. Process and Display the PDF securely (PDF ON TOP)
+# 4. Process and Display the PDF securely via Image Conversion (UNBLOCKED FOR CHROME)
 try:
     reader = PdfReader("MS Office Reading Material.pdf")
     
     local_current_page = st.session_state[page_state_key]
     global_pdf_page = (target_start - 1) + (local_current_page - 1)
     
-    # Safe rendering via raw data components to bypass Chrome Frame blocking bugs
-    import base64
     writer = PdfWriter()
     if global_pdf_page < len(reader.pages):
         writer.add_page(reader.pages[global_pdf_page])
@@ -107,15 +105,21 @@ try:
     chapter_pdf_buffer = io.BytesIO()
     writer.write(chapter_pdf_buffer)
     chapter_pdf_bytes = chapter_pdf_buffer.getvalue()
-    base64_pdf = base64.b64encode(chapter_pdf_bytes).decode('utf-8')
     
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # Display the clear training page content frame
-    pdf_display_style = f'<iframe src="data:application/pdf;base64,{base64_pdf}#toolbar=0&navpanes=0" width="{zoom_level}px" height="600px" style="border:1px solid #ccc; border-radius:4px;"></iframe>'
-    st.components.v1.html(pdf_display_style, height=610)
+    # FIXED: Convert the active PDF page bytes to a high-quality secure image stream
+    rendered_images = convert_from_bytes(chapter_pdf_bytes, dpi=120)
     
+    if rendered_images:
+        # Create centering column architecture grid for presentation alignment
+        img_col1, img_col2, img_col3 = st.columns([1, 4, 1])
+        with img_col2:
+            st.image(rendered_images[0], width=zoom_level, use_container_width=False)
+    else:
+        st.error("Error reading file templates.")
+        
     st.markdown("---")
     
     # 5. Native Streamlit Page Scroller Controls (IN THE MIDDLE)
@@ -156,7 +160,7 @@ try:
 
     st.markdown("---")
     
-    # 6. FEATURE: Generated Video-Slideshow + Synced Shadow Voice Engine (VIDEO DOWN)
+    # 6. Presentation Video-Deck Player Component (VIDEO DOWN)
     st.subheader("📺 Generated Dynamic Lesson Presentation Player")
     
     active_page_object = reader.pages[global_pdf_page]
@@ -166,26 +170,21 @@ try:
     if clean_text:
         js_safe_text = clean_text.replace('"', '\\"').replace('\n', ' ')
         
-        # Format our slide arrays into a clean JavaScript array literal
         import json
         js_slides_array = json.dumps(chapter_slides)
         
-        # HTML5 + Canvas Presentation Player Component
         html_presentation_component = f"""
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e24; padding: 25px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); color: white;">
             
-            <!-- Controls Overlay Toolbar -->
             <div style="margin-bottom: 20px; display: flex; gap: 10px;">
-                <button id="btn-play" onclick="startLessonVideo()" style="padding: 10px 20px; background-color: #2eb85c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: background 0.2s;">▶ Play Lesson</button>
-                <button id="btn-stop" onclick="stopLessonVideo()" style="padding: 10px 20px; background-color: #e55353; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: background 0.2s;">⏹ Pause Lesson</button>
+                <button id="btn-play" onclick="startLessonVideo()" style="padding: 10px 20px; background-color: #2eb85c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem;">▶ Play Lesson</button>
+                <button id="btn-stop" onclick="stopLessonVideo()" style="padding: 10px 20px; background-color: #e55353; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem;">⏹ Pause Lesson</button>
             </div>
             
-            <!-- Audio Voice Box containing Text Shadows -->
             <div id="shadow-text-screen" style="font-size: 1.1rem; line-height: 1.8rem; color: #fff; margin-bottom: 20px; max-height: 90px; overflow-y: auto; background: #2a2a35; padding: 12px; border-left: 5px solid #321fdb; border-radius: 4px; box-sizing: border-box;"></div>
             
-            <!-- Generated Presentation Video Canvas Deck -->
             <div id="video-canvas-deck" style="background: linear-gradient(135deg, #321fdb 0%, #1f1487 100%); height: 350px; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; text-align: center; box-shadow: inset 0 0 40px rgba(0,0,0,0.5); transition: all 0.5s ease;">
-                <h1 id="slide-title" style="font-size: 2.8rem; margin: 0 0 15px 0; font-weight: 700; text-shadow: 2px 4px 10px rgba(0,0,0,0.4); letter-spacing: 1px;">Ready to Begin</h1>
+                <h1 id="slide-title" style="font-size: 2.8rem; margin: 0 0 15px 0; font-weight: 700; text-shadow: 2px 4px 10px rgba(0,0,0,0.4);">Ready to Begin</h1>
                 <p id="slide-desc" style="font-size: 1.4rem; max-width: 600px; line-height: 2rem; color: #ebedef; text-shadow: 1px 2px 5px rgba(0,0,0,0.3);">Click 'Play Lesson' to start the voice tracking and visual animation deck.</p>
             </div>
         </div>
@@ -205,12 +204,11 @@ try:
             let utterance = null;
             const totalWords = wordsArray.length;
 
-            // Beautiful fluid background color gradients to simulate dynamic video transitions
             const dynamicGradients = [
-                "linear-gradient(135deg, #321fdb 0%, #1f1487 100%)",   // Royal Blue
-                "linear-gradient(135deg, #2eb85c 0%, #1b6d37 100%)",   // Office Green
-                "linear-gradient(135deg, #f9b115 0%, #9b6d03 100%)",   // Warning Amber
-                "linear-gradient(135deg, #636f83 0%, #2f3542 100%)"    // Premium Platinum Charcoal
+                "linear-gradient(135deg, #321fdb 0%, #1f1487 100%)",   
+                "linear-gradient(135deg, #2eb85c 0%, #1b6d37 100%)",   
+                "linear-gradient(135deg, #f9b115 0%, #9b6d03 100%)",   
+                "linear-gradient(135deg, #636f83 0%, #2f3542 100%)"    
             ];
             
             function startLessonVideo() {{
@@ -218,7 +216,7 @@ try:
                 
                 utterance = new SpeechSynthesisUtterance(textToRead);
                 utterance.lang = 'en-US';
-                utterance.rate = 0.95; // Clear corporate voice training pace
+                utterance.rate = 0.95;
                 
                 utterance.onboundary = function(event) {{
                     if (event.name === 'word') {{
@@ -226,7 +224,6 @@ try:
                         const textUpToChar = textToRead.substring(0, charIndex).trim();
                         const currentWordIdx = textUpToChar ? textUpToChar.split(" ").length : 0;
                         
-                        // 1. Refresh shadow tracker highlights
                         document.querySelectorAll("#shadow-text-screen span").forEach(span => {{
                             span.style.backgroundColor = "transparent";
                             span.style.color = "#fff";
@@ -236,16 +233,12 @@ try:
                         if (activeWordSpan) {{
                             activeWordSpan.style.backgroundColor = "#f9b115";
                             activeWordSpan.style.color = "#000";
-                            activeWordSpan.style.borderRadius = "3px";
                         }}
                         
-                        // 2. AUTOMATIC PRESENTATION VIDEO SLIDE FLIPPING
-                        // Calculates location ratio and automatically matches text to slide themes
                         const completionRatio = currentWordIdx / totalWords;
                         let slideTargetIdx = Math.floor(completionRatio * slidesData.length);
                         if (slideTargetIdx >= slidesData.length) slideTargetIdx = slidesData.length - 1;
                         
-                        // Dynamically morph the slide visual parameters seamlessly
                         if(slidesData[slideTargetIdx]) {{
                             slideTitle.innerText = slidesData[slideTargetIdx].title;
                             slideDesc.innerText = slidesData[slideTargetIdx].desc;
