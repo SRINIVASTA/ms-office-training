@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize persistent session state for tracking checkboxes
+# Initialize persistent session state for progress tracking & active reading pages
 if "progress_tracker" not in st.session_state:
     st.session_state.progress_tracker = {}
 
@@ -52,28 +52,25 @@ with st.sidebar:
     chapter_sections = chapter_options[selected_chapter]["sections"]
     total_pages = target_end - target_start + 1
 
+    # Keep track of individual active page numbers for each separate chapter
+    page_state_key = f"current_page_{chapter_name}"
+    if page_state_key not in st.session_state:
+        st.session_state[page_state_key] = 1
+
     # Progress Tracker Checkbox UI in Sidebar
     st.markdown("---")
     st.subheader("✅ Chapter Milestones")
     
     completed_count = 0
     for section in chapter_sections:
-        # Generate a unique key for each checkbox combination
         unique_key = f"{chapter_name}_{section}"
-        
-        # Pull existing value or default to False
         is_checked = st.session_state.progress_tracker.get(unique_key, False)
-        
-        # Render the interactive checkbox
         current_state = st.checkbox(section, value=is_checked, key=f"cb_{unique_key}")
-        
-        # Store state updates back to session memory
         st.session_state.progress_tracker[unique_key] = current_state
         
         if current_state:
             completed_count += 1
             
-    # Interactive Visual Progress Bar
     completion_rate = completed_count / len(chapter_sections)
     st.progress(completion_rate)
     st.write(f"Chapter Progress: {int(completion_rate * 100)}%")
@@ -97,13 +94,16 @@ try:
     # Read the full source PDF file
     reader = PdfReader("MS Office Reading Material.pdf")
     
-    # Dynamic PDF Extraction for the active chapter
+    # Calculate global page number using current local page state
+    local_current_page = st.session_state[page_state_key]
+    global_pdf_page = (target_start - 1) + (local_current_page - 1)
+    
+    # Extract EXACTLY one page to prevent browser rendering overload issues
     writer = PdfWriter()
-    for page_num in range(target_start - 1, target_end):
-        if page_num < len(reader.pages):
-            writer.add_page(reader.pages[page_num])
+    if global_pdf_page < len(reader.pages):
+        writer.add_page(reader.pages[global_pdf_page])
             
-    # Save the split chapter into memory
+    # Save the isolated reading single page into memory
     chapter_pdf_buffer = io.BytesIO()
     writer.write(chapter_pdf_buffer)
     chapter_pdf_bytes = chapter_pdf_buffer.getvalue()
@@ -115,19 +115,53 @@ try:
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # View the extracted chapter natively starting from page 1 of this sub-file
+    # View the extracted single page
     pdf_display = (
-        f'<iframe src="data:application/pdf;base64,{base64_pdf}#page=1&zoom={zoom_level}" '
-        f'width="100%" height="950" type="application/pdf"></iframe>'
+        f'<iframe src="data:application/pdf;base64,{base64_pdf}#zoom={zoom_level}" '
+        f'width="100%" height="800" type="application/pdf"></iframe>'
     )
-    components.html(pdf_display, height=950)
+    components.html(pdf_display, height=800)
     
     st.markdown("---")
     
-    # 5. Targeted Chapter Download Button
+    # 5. Native Streamlit Page Scroller Buttons below the Viewer
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        if st.button("⬅️ Previous Page", use_container_width=True):
+            if st.session_state[page_state_key] > 1:
+                st.session_state[page_state_key] -= 1
+                st.rerun()
+                
+    with col2:
+        # Visual interactive page metrics below the doc frame
+        st.markdown(
+            f"<h3 style='text-align: center;'>📄 Page {local_current_page} of {total_pages}</h3>"
+            f"<p style='text-align: center; color: gray;'>(Manual Page: {target_start + local_current_page - 1})</p>", 
+            unsafe_allow_html=True
+        )
+        
+    with col3:
+        if st.button("Next Page ➡️", use_container_width=True):
+            if st.session_state[page_state_key] < total_pages:
+                st.session_state[page_state_key] += 1
+                st.rerun()
+
+    st.markdown("---")
+    
+    # 6. Full Target Chapter Manual Download Action Button
+    # Extracts the complete sub-chapter file range for offline reading
+    full_chapter_writer = PdfWriter()
+    for p_idx in range(target_start - 1, target_end):
+        if p_idx < len(reader.pages):
+            full_chapter_writer.add_page(reader.pages[p_idx])
+    
+    full_chapter_buffer = io.BytesIO()
+    full_chapter_writer.write(full_chapter_buffer)
+    
     st.download_button(
         label=f"📥 Download Just Chapter: {chapter_name} (PDF)",
-        data=chapter_pdf_bytes,
+        data=full_chapter_buffer.getvalue(),
         file_name=chapter_filename,
         mime="application/pdf",
         type="primary"
