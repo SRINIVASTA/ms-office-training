@@ -1,4 +1,3 @@
 streamlit
 pypdf
-pdf2image
-pillow
+streamlit-pdf-viewer
