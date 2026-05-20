@@ -77,7 +77,7 @@ with st.sidebar:
     # Dynamic Size Controls
     st.markdown("---")
     st.subheader("🔍 View Adjustments")
-    zoom_level = st.slider("Adjust Viewer Width (px)", min_value=400, max_value=1400, value=900, step=50)
+    zoom_level = st.slider("Adjust Viewer Width (px)", min_value=400, max_value=1400, value=1000, step=50)
 
     st.markdown("---")
     # Page 2 Verified Legal Clause
@@ -111,18 +111,15 @@ try:
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # Render the native canvas element (Fixed: Added integer 3 to st.columns)
-    col_v1, col_v2, col_v3 = st.columns(3)
-    with col_v2:
-        pdf_viewer(
-            input=chapter_pdf_bytes,
-            width=zoom_level,
-            pages_to_render=[1]
-        )
+    # REMOVED COLUMN MIXIN: Renders directly on page to prevent right-edge clipping
+    pdf_viewer(
+        input=chapter_pdf_bytes,
+        width=zoom_level
+    )
     
     st.markdown("---")
     
-    # 5. Native Streamlit Page Scroller Buttons below the Viewer (Fixed: Added integer 3 to st.columns)
+    # 5. Native Streamlit Page Scroller Buttons below the Viewer
     col1, col2, col3 = st.columns(3)
     
     with col1:
