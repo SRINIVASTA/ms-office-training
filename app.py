@@ -106,7 +106,6 @@ try:
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # Renders original graphic manual safely on top layer (Unblockable by Chrome)
     st.pdf(chapter_pdf_bytes)
 
     # 5. HYBRID VOICE AND TRACKING SHADOW ACCESS CONTAINER
@@ -226,38 +225,43 @@ try:
                 st.session_state[page_state_key] += 1
                 st.rerun()
 
-    # 7. NEW FEATURE: INTERACTIVE CHAPTER QUIZ SECTION
-    st.markdown("---")
-    st.header(f"📝 Interactive Mini-Quiz: {chapter_name}")
-    st.caption("Test your understanding of this software block before downloading your files.")
-    
-    quiz_form_key = f"quiz_form_{chapter_name}"
-    score = 0
-    
-    with st.form(key=quiz_form_key):
-        user_selections = {}
-        for idx, item in enumerate(chapter_quiz):
-            st.markdown(f"**Q{idx+1}: {item['q']}**")
-            user_selections[idx] = st.radio(
-                "Select the correct option:",
-                options=item["options"],
-                key=f"q_{chapter_name}_{idx}"
-            )
-            st.markdown("")
-            
-        submit_quiz = st.form_submit_button("Submit Quiz Answers", type="secondary")
+    # 7. FIXED CONDITION: Quiz section unlocks ONLY on the very last page of the chapter
+    if local_current_page == total_pages:
+        st.markdown("---")
+        st.header(f"📝 Interactive Mini-Quiz: {chapter_name}")
+        st.info("🎉 Congratulations on reaching the end of the chapter! Complete this quick quiz to lock in your score.")
         
-        if submit_quiz:
+        quiz_form_key = f"quiz_form_{chapter_name}"
+        score = 0
+        
+        with st.form(key=quiz_form_key):
+            user_selections = {}
             for idx, item in enumerate(chapter_quiz):
-                if user_selections[idx] == item["correct"]:
-                    score += 1
-                    st.success(f"✔️ Q{idx+1} is Correct!")
-                else:
-                    st.error(f"❌ Q{idx+1} is Incorrect. Correct answer: {item['correct']}")
+                st.markdown(f"**Q{idx+1}: {item['q']}**")
+                user_selections[idx] = st.radio(
+                    "Select the correct option:",
+                    options=item["options"],
+                    key=f"q_{chapter_name}_{idx}"
+                )
+                st.markdown("")
+                
+            submit_quiz = st.form_submit_button("Submit Quiz Answers", type="secondary")
             
-            st.metric(label="Your Quiz Score", value=f"{score} / {len(chapter_quiz)}")
-            if score == len(chapter_quiz):
-                st.balloons()
+            if submit_quiz:
+                for idx, item in enumerate(chapter_quiz):
+                    if user_selections[idx] == item["correct"]:
+                        score += 1
+                        st.success(f"✔️ Q{idx+1} is Correct!")
+                    else:
+                        st.error(f"❌ Q{idx+1} is Incorrect. Correct answer: {item['correct']}")
+                
+                st.metric(label="Your Quiz Score", value=f"{score} / {len(chapter_quiz)}")
+                if score == len(chapter_quiz):
+                    st.balloons()
+    else:
+        # Shown on pages 1 to 104 as a locked milestone teaser
+        st.markdown("---")
+        st.caption(f"🔒 **Chapter Mini-Quiz Locked**: Keep reading! The quiz panel will unlock automatically when you reach the final page of this training block (Page {total_pages}).")
 
     st.markdown("---")
     
