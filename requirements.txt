@@ -1,2 +1,4 @@
 streamlit
 pypdf
+pdf2image
+pillow
