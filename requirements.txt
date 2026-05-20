@@ -1,3 +1,5 @@
-streamlit[pdf]
 requests
+streamlit
 pypdf
+pdf2image
+pillow
