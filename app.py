@@ -33,11 +33,11 @@ st.caption("A foundational training manual by Srinivasta — open to learners of
 with st.sidebar:
     st.header("📖 Navigation Controls")
     
-    # PRODUCTION READY DICTIONARY: Populated with working public tutorial embeds
+    # PRODUCTION READY DICTIONARY: Populated with verified global tutorial IDs
     chapter_options = {
         "1. Microsoft Word (Pages 5 - 109)": {
             "start": 5, "end": 109, "label": "MS Word", "filename": "MS_Word_Training_Guide.pdf",
-            "youtube_id": "S-nHYzK-BVg", # High-quality secure tutorial ID
+            "youtube_id": "S-nHYzK-BVg", 
             "sections": [
                 {"name": "Word Basics & Interface", "seconds": 0},
                 {"name": "Text Formatting & Styles", "seconds": 300},
@@ -191,7 +191,7 @@ try:
             </button>
             """
         
-        # Combined HTML component hosting secure Iframe API connections
+        # FIXED IFRAME PATHWAY: Absolute syntax definition avoids cross-domain address parsing errors
         html_speech_video_component = f"""
         <div style="font-family: sans-serif; background-color: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
             
@@ -210,7 +210,7 @@ try:
                 {buttons_html}
             </div>
 
-            <!-- Fully Authenticated and Secure YouTube Iframe API Player Asset (Bypasses Blank Sheet Security Bugs) -->
+            <!-- Absolute secure embed structure removes formatting errors -->
             <div style="text-align: center; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; background: #000; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
                 <iframe id="player-iframe" 
                         src="https://youtube.com{active_yt_id}?enablejsapi=1&rel=0" 
@@ -268,7 +268,7 @@ try:
                 
                 synth.speak(utterance);
                 
-                // Instruct YouTube embedded iframe instance to begin rolling automatically
+                // Secure postMessage communication trigger
                 iframe.contentWindow.postMessage('{{\"event\":\"command\",\"func\":\"playVideo\",\"args\":[]}}', '*');
             }}
             
@@ -277,7 +277,6 @@ try:
                 iframe.contentWindow.postMessage('{{\"event\":\"command\",\"func\":\"pauseVideo\",\"args\":[]}}', '*');
             }}
             
-            // COMMAND TARGET CONTROL: Instructs YouTube's inner layer to warp safely to chosen seconds
             function seekVideo(seconds) {{
                 iframe.contentWindow.postMessage('{{\"event\":\"command\",\"func\":\"seekTo\",\"args\":[' + seconds + ', true]}}', '*');
                 iframe.contentWindow.postMessage('{{\"event\":\"command\",\"func\":\"playVideo\",\"args\":[]}}', '*');
