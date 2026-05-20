@@ -2,7 +2,6 @@ import io
 import streamlit as st
 from pypdf import PdfReader, PdfWriter
 from streamlit_pdf_viewer import pdf_viewer
-from gtts import gTTS
 
 # 1. Universal Layout Settings
 st.set_page_config(
@@ -118,28 +117,102 @@ try:
     
     st.markdown("---")
     
-    # 5. NEW FEATURE: Dynamic Page Audio Reader Component
-    st.subheader("🔊 Audio Assistant")
+    # 5. FEATURE: Dynamic Shadow Tracker Audio Reader Component
+    st.subheader("🔊 Guided Reading Assistant (Shadow Follow Tracker)")
+    
     active_page_object = reader.pages[global_pdf_page]
     extracted_raw_text = active_page_object.extract_text()
     
-    # Clean up empty strings or generic copyright labels before vocalization processing
+    # Filter text
     clean_text = extracted_raw_text.replace("Srinivasta", "").strip() if extracted_raw_text else ""
     
     if clean_text:
-        # Generate raw speech processing track in memory
-        tts_engine = gTTS(text=clean_text, lang='en', slow=False)
-        speech_io_buffer = io.BytesIO()
-        tts_engine.write_to_fp(speech_io_buffer)
+        # Escape any quote symbols to prevent breaking JavaScript string literals
+        js_safe_text = clean_text.replace('"', '\\"').replace('\n', ' ')
         
-        # Native widget featuring multi-state Volume sliders and standard Mute actions
-        st.audio(
-            speech_io_buffer.getvalue(), 
-            format="audio/mp3",
-            start_time=0
-        )
+        # Inject JavaScript engine featuring word boundary shadow tracking elements
+        html_speech_component = f"""
+        <div style="font-family: sans-serif; background-color: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+            <!-- Control bar buttons layout grid -->
+            <div style="margin-bottom: 15px;">
+                <button id="btn-play" onclick="startReading()" style="padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 10px;">▶ Speak Text</button>
+                <button id="btn-stop" onclick="stopReading()" style="padding: 8px 16px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">⏹ Mute / Stop</button>
+            </div>
+            
+            <!-- Target text rendering container context block -->
+            <div id="reading-text-box" style="font-size: 1.2rem; line-height: 1.8rem; color: #333; word-wrap: break-word;"></div>
+        </div>
+
+        <script>
+            const textToRead = "{js_safe_text}";
+            const textBox = document.getElementById("reading-text-box");
+            
+            // Split up the string into separate target word arrays
+            const wordsArray = textToRead.split(" ");
+            
+            // Rebuild words wrapped in span boxes so we can cast target highlights
+            textBox.innerHTML = wordsArray.map((word, idx) => `<span id="word-${{idx}}">${{word}}</span>`).join(" ");
+            
+            let synth = window.speechSynthesis;
+            let utterance = null;
+            
+            function startReading() {{
+                // Stop any leftover audio actions running
+                synth.cancel();
+                
+                utterance = new SpeechSynthesisUtterance(textToRead);
+                utterance.lang = 'en-US';
+                utterance.rate = 1.0; // Normal speech rate pacing
+                
+                // Track current word boundaries dynamically as the voice processes
+                utterance.onboundary = function(event) {{
+                    if (event.name === 'word') {{
+                        // Calculate word index based on text string offsets
+                        const charIndex = event.charIndex;
+                        const textUpToChar = textToRead.substring(0, charIndex).trim();
+                        const wordCountIndex = textUpToChar ? textUpToChar.split(" ").length : 0;
+                        
+                        // Clear out all previous text box shadow frames
+                        document.querySelectorAll("#reading-text-box span").forEach(span => {{
+                            span.style.backgroundColor = "transparent";
+                            span.style.boxShadow = "none";
+                            span.style.borderRadius = "0px";
+                        }});
+                        
+                        // Cast a shadow highlighting background over current word index element
+                        const activeWordSpan = document.getElementById(`word-${{wordCountIndex}}`);
+                        if (activeWordSpan) {{
+                            activeWordSpan.style.backgroundColor = "#ffeb3b";
+                            activeWordSpan.style.boxShadow = "0px 0px 8px #ffeb3b";
+                            activeWordSpan.style.borderRadius = "4px";
+                            activeWordSpan.style.transition = "all 0.1s ease";
+                        }}
+                    }}
+                }};
+                
+                // Clear out highlighted shadows once speaking concludes natively
+                utterance.onend = function() {{
+                    document.querySelectorAll("#reading-text-box span").forEach(span => {{
+                        span.style.backgroundColor = "transparent";
+                        span.style.boxShadow = "none";
+                    }});
+                }};
+                
+                synth.speak(utterance);
+            }}
+            
+            function stopReading() {{
+                synth.cancel();
+                document.querySelectorAll("#reading-text-box span").forEach(span => {{
+                    span.style.backgroundColor = "transparent";
+                    span.style.boxShadow = "none";
+                }});
+            }}
+        </script>
+        """
+        st.components.v1.html(html_speech_component, height=280, scrolling=True)
     else:
-        st.caption("ℹ️ No readable text detected on this specific template layout page to speak out loud.")
+        st.caption("ℹ️ No readable text discovered on this page to run guided tracking against.")
 
     st.markdown("---")
     
