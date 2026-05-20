@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize persistent session state for progress tracking & active reading pages
+# Initialize persistent session state for progress tracking
 if "progress_tracker" not in st.session_state:
     st.session_state.progress_tracker = {}
 
@@ -22,18 +22,18 @@ st.caption("A foundational training manual by Srinivasta — open to learners of
 with st.sidebar:
     st.header("📖 Navigation Controls")
     
-    # Chapter Dropdown selection mapping
+    # VERIFIED CHAPTER MAPPING: Perfectly matched to PDF table indices
     chapter_options = {
-        "1. Microsoft Word (Pages 4 - 109)": {
-            "start": 4, "end": 109, "label": "MS Word", "filename": "MS_Word_Training_Guide.pdf",
+        "1. Microsoft Word (Pages 5 - 109)": {
+            "start": 5, "end": 109, "label": "MS Word", "filename": "MS_Word_Training_Guide.pdf",
             "sections": ["Word Basics & Interface", "Text Formatting & Styles", "Tables & Graphics", "Page Layout & Printing"]
         },
         "2. Microsoft Excel (Pages 110 - 259)": {
             "start": 110, "end": 259, "label": "MS Excel", "filename": "MS_Excel_Training_Guide.pdf",
             "sections": ["Excel Spreadsheet Basics", "Formulas & Basic Functions", "Data Sorting & Filtering", "Charts & Graphs"]
         },
-        "3. Microsoft PowerPoint (Pages 260 - 322)": {
-            "start": 260, "end": 322, "label": "MS PowerPoint", "filename": "MS_PowerPoint_Training_Guide.pdf",
+        "3. Microsoft PowerPoint (Pages 260 - 323)": {
+            "start": 260, "end": 323, "label": "MS PowerPoint", "filename": "MS_PowerPoint_Training_Guide.pdf",
             "sections": ["Presentation Basics & Layouts", "Adding Animations & Transitions", "Inserting Media & Objects", "Slide Show Delivery"]
         }
     }
@@ -111,32 +111,48 @@ try:
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # REMOVED COLUMN MIXIN: Renders directly on page to prevent right-edge clipping
+    # Render the native canvas element
     pdf_viewer(
         input=chapter_pdf_bytes,
-        width=zoom_level
+        width=zoom_level,
+        key=f"pdf_render_{chapter_name}_{local_current_page}"
     )
     
     st.markdown("---")
     
-    # 5. Native Streamlit Page Scroller Buttons below the Viewer
-    col1, col2, col3 = st.columns(3)
+    # 5. Native Streamlit Page Scroller & Input Navigation Row
+    col1, col2, col3 = st.columns([2, 3, 2])
     
     with col1:
+        st.write("") # Spatial adjustment padding
         if st.button("⬅️ Previous Page", use_container_width=True):
             if st.session_state[page_state_key] > 1:
                 st.session_state[page_state_key] -= 1
                 st.rerun()
                 
     with col2:
-        # Visual interactive page metrics below the doc frame
+        # DYNAMIC JUMP INPUT FIELD: Validates boundaries instantly
+        jump_page = st.number_input(
+            label=f"Jump to Page (1 to {total_pages})",
+            min_value=1,
+            max_value=total_pages,
+            value=int(local_current_page),
+            step=1,
+            key=f"jump_input_{chapter_name}"
+        )
+        # Update session state memory if user typed a different page number manually
+        if jump_page != st.session_state[page_state_key]:
+            st.session_state[page_state_key] = jump_page
+            st.rerun()
+            
         st.markdown(
-            f"<h3 style='text-align: center; margin:0;'>📄 Page {local_current_page} of {total_pages}</h3>"
-            f"<p style='text-align: center; color: gray; margin:0;'>(Manual Page: {target_start + local_current_page - 1})</p>", 
+            f"<p style='text-align: center; color: gray; margin: 0; font-size: 0.9rem;'>"
+            f"(Manual Document Page: {target_start + local_current_page - 1})</p>", 
             unsafe_allow_html=True
         )
         
     with col3:
+        st.write("") # Spatial adjustment padding
         if st.button("Next Page ➡️", use_container_width=True):
             if st.session_state[page_state_key] < total_pages:
                 st.session_state[page_state_key] += 1
