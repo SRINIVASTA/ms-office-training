@@ -9,9 +9,11 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize persistent session state for progress tracking
+# Initialize persistent session state for progress tracking & quizzes
 if "progress_tracker" not in st.session_state:
     st.session_state.progress_tracker = {}
+if "quiz_answers" not in st.session_state:
+    st.session_state.quiz_answers = {}
 
 # 2. Page Headers
 st.title("📚 MS Office 2016: Complete Training Guide")
@@ -24,15 +26,27 @@ with st.sidebar:
     chapter_options = {
         "1. Microsoft Word (Pages 5 - 109)": {
             "start": 5, "end": 109, "label": "MS Word", "filename": "MS_Word_Training_Guide.pdf",
-            "sections": ["Word Basics & Interface", "Text Formatting & Styles", "Tables & Graphics", "Page Layout & Printing"]
+            "sections": ["Word Basics & Interface", "Text Formatting & Styles", "Tables & Graphics", "Page Layout & Printing"],
+            "quiz": [
+                {"q": "Which tab in MS Word 2016 contains the font formatting options?", "options": ["Insert", "Home", "Layout", "Review"], "correct": "Home"},
+                {"q": "What is the default extension for a saved MS Word 2016 file?", "options": [".txt", ".docx", ".pdf", ".xlsx"], "correct": ".docx"}
+            ]
         },
         "2. Microsoft Excel (Pages 110 - 259)": {
             "start": 110, "end": 259, "label": "MS Excel", "filename": "MS_Excel_Training_Guide.pdf",
-            "sections": ["Excel Spreadsheet Basics", "Formulas & Basic Functions", "Data Sorting & Filtering", "Charts & Graphs"]
+            "sections": ["Excel Spreadsheet Basics", "Formulas & Basic Functions", "Data Sorting & Filtering", "Charts & Graphs"],
+            "quiz": [
+                {"q": "Which formula correctly adds cells A1 and A2 in Excel?", "options": ["=ADD(A1:A2)", "=SUM(A1,A2)", "=A1+A2", "Both =SUM(A1,A2) and =A1+A2"], "correct": "Both =SUM(A1,A2) and =A1+A2"},
+                {"q": "What is the intersection of a row and a column called?", "options": ["Grid", "Block", "Cell", "Sheet"], "correct": "Cell"}
+            ]
         },
         "3. Microsoft PowerPoint (Pages 260 - 323)": {
             "start": 260, "end": 323, "label": "MS PowerPoint", "filename": "MS_PowerPoint_Training_Guide.pdf",
-            "sections": ["Presentation Basics & Layouts", "Adding Animations & Transitions", "Inserting Media & Objects", "Slide Show Delivery"]
+            "sections": ["Presentation Basics & Layouts", "Adding Animations & Transitions", "Inserting Media & Objects", "Slide Show Delivery"],
+            "quiz": [
+                {"q": "What is the shortcut key to start a presentation slide show from the beginning?", "options": ["F5", "Ctrl + P", "Spacebar", "F11"], "correct": "F5"},
+                {"q": "Which effect controls how a single slide moves off the screen and the next one appears?", "options": ["Animation", "Transition", "Wipe", "Fade"], "correct": "Transition"}
+            ]
         }
     }
     
@@ -46,6 +60,7 @@ with st.sidebar:
     chapter_name = chapter_options[selected_chapter]["label"]
     chapter_filename = chapter_options[selected_chapter]["filename"]
     chapter_sections = chapter_options[selected_chapter]["sections"]
+    chapter_quiz = chapter_options[selected_chapter]["quiz"]
     total_pages = target_end - target_start + 1
 
     page_state_key = f"current_page_{chapter_name}"
@@ -70,13 +85,16 @@ with st.sidebar:
     st.progress(completion_rate)
     st.write(f"Chapter Progress: {int(completion_rate * 100)}%")
 
+    st.markdown("---")
+    st.subheader("🔍 View Adjustments")
+    zoom_level = st.slider("Adjust Document Size (px width)", min_value=400, max_value=1400, value=900, step=50)
+
 # 4. Process and Display the PDF Securely via Native Streamlit API Layer
 try:
     reader = PdfReader("MS Office Reading Material.pdf")
     local_current_page = st.session_state[page_state_key]
     global_pdf_page = (target_start - 1) + (local_current_page - 1)
     
-    # Isolate the exact page range into binary stream memory
     writer = PdfWriter()
     if global_pdf_page < len(reader.pages):
         writer.add_page(reader.pages[global_pdf_page])
@@ -88,32 +106,27 @@ try:
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # Renders original graphic manual safely on top layer
+    # Renders original graphic manual safely on top layer (Unblockable by Chrome)
     st.pdf(chapter_pdf_bytes)
 
-    # 5. HYBRID VOICE AND TRACKING SHADOW ACCESS CONTAINER (DIRECTLY BELOW THE PDF)
+    # 5. HYBRID VOICE AND TRACKING SHADOW ACCESS CONTAINER
     st.markdown("---")
     st.subheader("🔊 Kindle-Style Tracking Shadow Text Assistant")
     
     active_page_object = reader.pages[global_pdf_page]
     extracted_raw_text = active_page_object.extract_text()
     
-    # Clean and parse typography layers
     clean_text = extracted_raw_text.replace("Srinivasta", "").strip() if extracted_raw_text else ""
-    js_safe_text = clean_text.replace('"', '\\"').replace('\n', ' ') if clean_text else "No extractable text content discovered on this page layout template."
+    js_safe_text = clean_text.replace('"', '\\"').replace('\n', ' ') if clean_text else "No text content discovered on this page."
     
     html_tracking_component = f"""
     <div style="font-family: 'Segoe UI', system-ui, sans-serif; background-color: #fcfbf7; padding: 25px; border-radius: 8px; border: 1px solid #e6e3da;">
-        
-        <!-- Interactive Controls Menu -->
         <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
             <button id="btn-play" onclick="startAutomatedReading()" style="padding: 10px 22px; background-color: #fad160; color: #111; border: 1px solid #e6b422; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 0.95rem;">▶ Read Out Loud</button>
             <button id="btn-stop" onclick="stopAutomatedReading()" style="padding: 10px 22px; background-color: #f0f2f6; color: #333; border: 1px solid #ccc; border-radius: 20px; cursor: pointer; font-weight: 500; font-size: 0.95rem;">⏸ Pause</button>
             <span id="reading-tracker-status" style="margin-left: auto; font-size: 0.85rem; color: #666; font-weight: 500;">Status: Ready to assist</span>
         </div>
-        
-        <!-- Kindle Readable Frame: Rebuilds text perfectly so browser engines can hook into coordinates -->
-        <div id="accessible-text-deck" style="font-size: 1.25rem; line-height: 2.1rem; color: #222; text-align: justify; font-family: Georgia, serif; max-height: 250px; overflow-y: auto; background: white; padding: 15px; border: 1px solid #eee; border-radius: 4px;"></div>
+        <div id="accessible-text-deck" style="font-size: 1.25rem; line-height: 2.1rem; color: #222; text-align: justify; font-family: Georgia, serif; max-height: 200px; overflow-y: auto; background: white; padding: 15px; border: 1px solid #eee; border-radius: 4px;"></div>
     </div>
 
     <script>
@@ -134,7 +147,7 @@ try:
             
             utterInstance = new SpeechSynthesisUtterance(textPayload);
             utterInstance.lang = 'en-US';
-            utterInstance.rate = 0.95; // Steady audiobook delivery speed
+            utterInstance.rate = 0.95;
             
             utterInstance.onboundary = function(event) {{
                 if (event.name === 'word') {{
@@ -142,16 +155,14 @@ try:
                     const runningSubstring = textPayload.substring(0, characterOffset).trim();
                     const activeWordIndexPointer = runningSubstring ? runningSubstring.split(" ").length : 0;
                     
-                    // Clear previous highlights
                     document.querySelectorAll("#accessible-text-deck span").forEach(node => {{
                         node.style.backgroundColor = "transparent";
                         node.style.boxShadow = "none";
                     }});
                     
-                    // Cast smooth yellow tracking shadow over active spoken token
                     const targetedNode = document.getElementById(`word-token-${{activeWordIndexPointer}}`);
                     if (targetedNode) {{
-                        targetedNode.style.backgroundColor = "#fff2a3"; // Amazon signature yellow highlight
+                        targetedNode.style.backgroundColor = "#fff2a3";
                         targetedNode.style.boxShadow = "0 1px 5px #fff2a3";
                         targetedNode.scrollIntoView({{ behavior: 'smooth', block: 'nearest' }});
                     }}
@@ -176,7 +187,7 @@ try:
         }}
     </script>
     """
-    st.components.v1.html(html_tracking_component, height=350, scrolling=False)
+    st.components.v1.html(html_tracking_component, height=300, scrolling=False)
 
     # 6. Native Streamlit Layout Pagination Bar
     st.markdown("---")
@@ -215,9 +226,42 @@ try:
                 st.session_state[page_state_key] += 1
                 st.rerun()
 
+    # 7. NEW FEATURE: INTERACTIVE CHAPTER QUIZ SECTION
+    st.markdown("---")
+    st.header(f"📝 Interactive Mini-Quiz: {chapter_name}")
+    st.caption("Test your understanding of this software block before downloading your files.")
+    
+    quiz_form_key = f"quiz_form_{chapter_name}"
+    score = 0
+    
+    with st.form(key=quiz_form_key):
+        user_selections = {}
+        for idx, item in enumerate(chapter_quiz):
+            st.markdown(f"**Q{idx+1}: {item['q']}**")
+            user_selections[idx] = st.radio(
+                "Select the correct option:",
+                options=item["options"],
+                key=f"q_{chapter_name}_{idx}"
+            )
+            st.markdown("")
+            
+        submit_quiz = st.form_submit_button("Submit Quiz Answers", type="secondary")
+        
+        if submit_quiz:
+            for idx, item in enumerate(chapter_quiz):
+                if user_selections[idx] == item["correct"]:
+                    score += 1
+                    st.success(f"✔️ Q{idx+1} is Correct!")
+                else:
+                    st.error(f"❌ Q{idx+1} is Incorrect. Correct answer: {item['correct']}")
+            
+            st.metric(label="Your Quiz Score", value=f"{score} / {len(chapter_quiz)}")
+            if score == len(chapter_quiz):
+                st.balloons()
+
     st.markdown("---")
     
-    # 7. Chapter Manual Download Action Button
+    # 8. Chapter Manual Download Action Button
     full_chapter_writer = PdfWriter()
     for p_idx in range(target_start - 1, target_end):
         if p_idx < len(reader.pages):
