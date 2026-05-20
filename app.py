@@ -16,7 +16,7 @@ if "progress_tracker" not in st.session_state:
 # 2. Page Headers
 st.title("📚 MS Office 2016: Complete Training Guide")
 st.caption("A foundational training manual by Srinivasta — open to learners of all ages.")
-st.success("🎯 **UNBLOCKED INTERACTIVE MODE**: To hear pages read out loud with direct line tracking, simply select/highlight any sentence on the PDF page below with your mouse, right-click, and choose **'Read Aloud'**!")
+st.success("🎯 **UNBLOCKED INTERACTIVE MODE**: To hear pages read out loud with direct line tracking, simply select/highlight any sentence on the PDF page below with your mouse, right-click, and choose **'Read Aloud'** or open Chrome's Reading Mode!")
 
 # 3. Interactive Chapter Selection & Page Math
 with st.sidebar:
@@ -89,8 +89,8 @@ try:
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # FIXED: Removed the 'num_pages' argument causing the unexpected keyword crash
-    st.pdf(data=chapter_pdf_bytes)
+    # FIXED: Handing raw bytes directly to native, secure unblockable layout feature
+    st.pdf(chapter_pdf_bytes)
 
     # 5. Native Streamlit Layout Pagination Bar
     st.markdown("---")
@@ -117,8 +117,8 @@ try:
             st.rerun()
             
         st.markdown(
-            f"<p style='text-align: center; color: gray; margin: 0; font-size: 0.9rem;'>"
-            f"(Manual Document Page: {target_start + local_current_page - 1})</p>", 
+            f"<h3 style='text-align: center; margin:0;'>📄 Page {local_current_page} of {total_pages}</h3>"
+            f"<p style='text-align: center; color: gray; margin:0;'>(Manual Page: {target_start + local_current_page - 1})</p>", 
             unsafe_allow_html=True
         )
         
