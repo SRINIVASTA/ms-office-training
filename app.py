@@ -1,8 +1,7 @@
-import base64
 import io
 import streamlit as st
-import streamlit.components.v1 as components
 from pypdf import PdfReader, PdfWriter
+from streamlit_pdf_viewer import pdf_viewer
 
 # 1. Universal Layout Settings
 st.set_page_config(
@@ -75,10 +74,10 @@ with st.sidebar:
     st.progress(completion_rate)
     st.write(f"Chapter Progress: {int(completion_rate * 100)}%")
 
-    # Dynamic Zoom Controls
+    # Dynamic Size Controls
     st.markdown("---")
     st.subheader("🔍 View Adjustments")
-    zoom_level = st.slider("Adjust Zoom Percentage (%)", min_value=50, max_value=200, value=100, step=10)
+    zoom_level = st.slider("Adjust Viewer Width (px)", min_value=400, max_value=1400, value=900, step=50)
 
     st.markdown("---")
     # Page 2 Verified Legal Clause
@@ -89,7 +88,7 @@ with st.sidebar:
         "regarding the content of your training."
     )
 
-# 4. Process and Display the PDF
+# 4. Process and Display the PDF securely
 try:
     # Read the full source PDF file
     reader = PdfReader("MS Office Reading Material.pdf")
@@ -98,7 +97,7 @@ try:
     local_current_page = st.session_state[page_state_key]
     global_pdf_page = (target_start - 1) + (local_current_page - 1)
     
-    # Extract EXACTLY one page to prevent browser rendering overload issues
+    # Extract EXACTLY one page to prevent memory rendering overload issues
     writer = PdfWriter()
     if global_pdf_page < len(reader.pages):
         writer.add_page(reader.pages[global_pdf_page])
@@ -108,24 +107,24 @@ try:
     writer.write(chapter_pdf_buffer)
     chapter_pdf_bytes = chapter_pdf_buffer.getvalue()
     
-    # Convert split chapter PDF to Base64 for viewing
-    base64_pdf = base64.b64encode(chapter_pdf_bytes).decode('utf-8')
-    
     # Context Header directly above the viewer
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # View the extracted single page
-    pdf_display = (
-        f'<iframe src="data:application/pdf;base64,{base64_pdf}#zoom={zoom_level}" '
-        f'width="100%" height="800" type="application/pdf"></iframe>'
-    )
-    components.html(pdf_display, height=800)
+    # Render the native canvas element (bypasses Chrome iFrame block rules)
+    col_v1, col_v2, col_v3 = st.columns([1, 4, 1])
+    with col_v2:
+        pdf_viewer(
+            input=chapter_pdf_bytes,
+            width=zoom_level,
+            annotation_layer=False,
+            pages_to_render=[1]
+        )
     
     st.markdown("---")
     
     # 5. Native Streamlit Page Scroller Buttons below the Viewer
-    col1, col2, col3 = st.columns([1, 2, 1])
+    col1, col2, col3 = st.columns()
     
     with col1:
         if st.button("⬅️ Previous Page", use_container_width=True):
@@ -136,8 +135,8 @@ try:
     with col2:
         # Visual interactive page metrics below the doc frame
         st.markdown(
-            f"<h3 style='text-align: center;'>📄 Page {local_current_page} of {total_pages}</h3>"
-            f"<p style='text-align: center; color: gray;'>(Manual Page: {target_start + local_current_page - 1})</p>", 
+            f"<h3 style='text-align: center; margin:0;'>📄 Page {local_current_page} of {total_pages}</h3>"
+            f"<p style='text-align: center; color: gray; margin:0;'>(Manual Page: {target_start + local_current_page - 1})</p>", 
             unsafe_allow_html=True
         )
         
@@ -150,7 +149,6 @@ try:
     st.markdown("---")
     
     # 6. Full Target Chapter Manual Download Action Button
-    # Extracts the complete sub-chapter file range for offline reading
     full_chapter_writer = PdfWriter()
     for p_idx in range(target_start - 1, target_end):
         if p_idx < len(reader.pages):
