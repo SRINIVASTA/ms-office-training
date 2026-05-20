@@ -1,7 +1,7 @@
 import io
+import base64
 import streamlit as st
 from pypdf import PdfReader, PdfWriter
-from streamlit_pdf_viewer import pdf_viewer
 
 # 1. Universal Layout Settings
 st.set_page_config(
@@ -17,6 +17,7 @@ if "progress_tracker" not in st.session_state:
 # 2. Page Headers
 st.title("📚 MS Office 2016: Complete Training Guide")
 st.caption("A foundational training manual by Srinivasta — open to learners of all ages.")
+st.info("💡 Pro-Tip: To hear the page read out loud with direct highlights, right-click any text inside the reader below and select 'Read Aloud'!")
 
 # 3. Interactive Chapter Selection & Page Math
 with st.sidebar:
@@ -25,30 +26,15 @@ with st.sidebar:
     chapter_options = {
         "1. Microsoft Word (Pages 5 - 109)": {
             "start": 5, "end": 109, "label": "MS Word", "filename": "MS_Word_Training_Guide.pdf",
-            "slides": [
-                {"title": "Welcome to Word 2016", "desc": "Exploring the Quick Access Toolbar, Ribbon tabs, and workspace setup."},
-                {"title": "Text Layout & Typography", "desc": "Mastering font adjustments, paragraphs, alignment, and formatting styles."},
-                {"title": "Tables & Graphic Design", "desc": "How to insert tabular grids, style borders, and format illustrations safely."},
-                {"title": "Document Finalization", "desc": "Managing page margins, page orientation, headers, footers, and print tracking."}
-            ]
+            "sections": ["Word Basics & Interface", "Text Formatting & Styles", "Tables & Graphics", "Page Layout & Printing"]
         },
         "2. Microsoft Excel (Pages 110 - 259)": {
             "start": 110, "end": 259, "label": "MS Excel", "filename": "MS_Excel_Training_Guide.pdf",
-            "slides": [
-                {"title": "Excel Interface & Cells", "desc": "Understanding rows, columns, unique cell addresses, and workbook navigation."},
-                {"title": "Formulas & Basic Math", "desc": "Writing structural syntax using SUM, AVERAGE, COUNT, and standard operations."},
-                {"title": "Data Sorting & Filters", "desc": "Organizing massive datasets alphabetically, numerically, or via custom filters."},
-                {"title": "Charts & Visual Graphics", "desc": "Transforming clean data cells into standard Pie, Bar, and Line charts instantly."}
-            ]
+            "sections": ["Excel Spreadsheet Basics", "Formulas & Basic Functions", "Data Sorting & Filtering", "Charts & Graphs"]
         },
         "3. Microsoft PowerPoint (Pages 260 - 323)": {
             "start": 260, "end": 323, "label": "MS PowerPoint", "filename": "MS_PowerPoint_Training_Guide.pdf",
-            "slides": [
-                {"title": "Slide Foundations", "desc": "Choosing structural layout designs, adding new slides, and placeholder control."},
-                {"title": "Animations & Transitions", "desc": "Applying dynamic cinematic movements between slide deck switches cleanly."},
-                {"title": "Media, Audio & Graphics", "desc": "Inserting external images, recording shapes, and adding media attachments."},
-                {"title": "Delivering Presentations", "desc": "Using Presenter View, timeline controls, laser tools, and slide loops."}
-            ]
+            "sections": ["Presentation Basics & Layouts", "Adding Animations & Transitions", "Inserting Media & Objects", "Slide Show Delivery"]
         }
     }
     
@@ -61,7 +47,7 @@ with st.sidebar:
     target_end = chapter_options[selected_chapter]["end"]
     chapter_name = chapter_options[selected_chapter]["label"]
     chapter_filename = chapter_options[selected_chapter]["filename"]
-    chapter_slides = chapter_options[selected_chapter]["slides"]
+    chapter_sections = chapter_options[selected_chapter]["sections"]
     total_pages = target_end - target_start + 1
 
     page_state_key = f"current_page_{chapter_name}"
@@ -73,31 +59,30 @@ with st.sidebar:
     st.subheader("✅ Chapter Milestones")
     
     completed_count = 0
-    for slide_item in chapter_slides:
-        s_title = slide_item["title"]
-        unique_key = f"{chapter_name}_{s_title}"
+    for section in chapter_sections:
+        unique_key = f"{chapter_name}_{section}"
         is_checked = st.session_state.progress_tracker.get(unique_key, False)
-        current_state = st.checkbox(s_title, value=is_checked, key=f"cb_{unique_key}")
+        current_state = st.checkbox(section, value=is_checked, key=f"cb_{unique_key}")
         st.session_state.progress_tracker[unique_key] = current_state
         
         if current_state:
             completed_count += 1
             
-    completion_rate = completed_count / len(chapter_slides) if chapter_slides else 0
+    completion_rate = completed_count / len(chapter_sections) if chapter_sections else 0
     st.progress(completion_rate)
     st.write(f"Chapter Progress: {int(completion_rate * 100)}%")
 
     st.markdown("---")
     st.subheader("🔍 View Adjustments")
-    zoom_level = st.slider("Adjust Document Size (px width)", min_value=400, max_value=1400, value=900, step=50)
+    zoom_level = st.slider("Adjust Document Size (px width)", min_value=500, max_value=1400, value=1000, step=50)
 
-# 4. Process and Display the PDF securely via streamlit-pdf-viewer (NO POPPLER REQUIRED)
+# 4. Process and Display the PDF
 try:
     reader = PdfReader("MS Office Reading Material.pdf")
-    
     local_current_page = st.session_state[page_state_key]
     global_pdf_page = (target_start - 1) + (local_current_page - 1)
     
+    # Extract the exact page range for the current chapter
     writer = PdfWriter()
     if global_pdf_page < len(reader.pages):
         writer.add_page(reader.pages[global_pdf_page])
@@ -106,19 +91,26 @@ try:
     writer.write(chapter_pdf_buffer)
     chapter_pdf_bytes = chapter_pdf_buffer.getvalue()
     
+    # Encode to Base64 to stream natively into the browser
+    base64_pdf = base64.b64encode(chapter_pdf_bytes).decode('utf-8')
+    
     st.subheader(f"📖 Currently Viewing: {chapter_name}")
     st.info(f"Target Section: Page {target_start} to Page {target_end} ({total_pages} total training pages)")
     
-    # Render PDF Canvas Frame without utilizing poppler layers
-    pdf_viewer(
-        input=chapter_pdf_bytes,
-        width=zoom_level,
-        key=f"pdf_render_{chapter_name}_{local_current_page}"
-    )
-        
-    st.markdown("---")
+    # UNBLOCKED FULL-SCREEN NATIVE EMBED: Opens Chrome's genuine internal PDF reader system
+    # This enables direct text selection and native Read-Aloud functions right on the original document
+    pdf_display_embed = f'''
+    <div style="display: flex; justify-content: center;">
+        <embed src="data:application/pdf;base64,{base64_pdf}#toolbar=1&navpanes=0&zoom=100" 
+               width="{zoom_level}px" 
+               height="800px" 
+               type="application/pdf">
+    </div>
+    '''
+    st.components.v1.html(pdf_display_embed, height=820)
     
-    # 5. Native Streamlit Page Scroller Controls (IN THE MIDDLE)
+    # 5. Native Streamlit Layout Pagination Bar
+    st.markdown("---")
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -156,117 +148,7 @@ try:
 
     st.markdown("---")
     
-    # 6. Presentation Video-Deck Player Component (VIDEO DOWN)
-    st.subheader("📺 Generated Dynamic Lesson Presentation Player")
-    
-    active_page_object = reader.pages[global_pdf_page]
-    extracted_raw_text = active_page_object.extract_text()
-    clean_text = extracted_raw_text.replace("Srinivasta", "").strip() if extracted_raw_text else ""
-    
-    if clean_text:
-        js_safe_text = clean_text.replace('"', '\\"').replace('\n', ' ')
-        
-        import json
-        js_slides_array = json.dumps(chapter_slides)
-        
-        html_presentation_component = f"""
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e24; padding: 25px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); color: white;">
-            
-            <div style="margin-bottom: 20px; display: flex; gap: 10px;">
-                <button id="btn-play" onclick="startLessonVideo()" style="padding: 10px 20px; background-color: #2eb85c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem;">▶ Play Lesson</button>
-                <button id="btn-stop" onclick="stopLessonVideo()" style="padding: 10px 20px; background-color: #e55353; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem;">⏹ Pause Lesson</button>
-            </div>
-            
-            <div id="shadow-text-screen" style="font-size: 1.1rem; line-height: 1.8rem; color: #fff; margin-bottom: 20px; max-height: 90px; overflow-y: auto; background: #2a2a35; padding: 12px; border-left: 5px solid #321fdb; border-radius: 4px; box-sizing: border-box;"></div>
-            
-            <div id="video-canvas-deck" style="background: linear-gradient(135deg, #321fdb 0%, #1f1487 100%); height: 350px; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; text-align: center; box-shadow: inset 0 0 40px rgba(0,0,0,0.5); transition: all 0.5s ease;">
-                <h1 id="slide-title" style="font-size: 2.8rem; margin: 0 0 15px 0; font-weight: 700; text-shadow: 2px 4px 10px rgba(0,0,0,0.4);">Ready to Begin</h1>
-                <p id="slide-desc" style="font-size: 1.4rem; max-width: 600px; line-height: 2rem; color: #ebedef; text-shadow: 1px 2px 5px rgba(0,0,0,0.3);">Click 'Play Lesson' to start the voice tracking and visual animation deck.</p>
-            </div>
-        </div>
-
-        <script>
-            const textToRead = "{js_safe_text}";
-            const textBox = document.getElementById("shadow-text-screen");
-            const slideTitle = document.getElementById("slide-title");
-            const slideDesc = document.getElementById("slide-desc");
-            const canvasDeck = document.getElementById("video-canvas-deck");
-            
-            const slidesData = {js_slides_array};
-            const wordsArray = textToRead.split(" ");
-            textBox.innerHTML = wordsArray.map((word, idx) => `<span id="word-${{idx}}">${{word}}</span>`).join(" ");
-            
-            let synth = window.speechSynthesis;
-            let utterance = null;
-            const totalWords = wordsArray.length;
-
-            const dynamicGradients = [
-                "linear-gradient(135deg, #321fdb 0%, #1f1487 100%)",   
-                "linear-gradient(135deg, #2eb85c 0%, #1b6d37 100%)",   
-                "linear-gradient(135deg, #f9b115 0%, #9b6d03 100%)",   
-                "linear-gradient(135deg, #636f83 0%, #2f3542 100%)"    
-            ];
-            
-            function startLessonVideo() {{
-                synth.cancel();
-                
-                utterance = new SpeechSynthesisUtterance(textToRead);
-                utterance.lang = 'en-US';
-                utterance.rate = 0.95;
-                
-                utterance.onboundary = function(event) {{
-                    if (event.name === 'word') {{
-                        const charIndex = event.charIndex;
-                        const textUpToChar = textToRead.substring(0, charIndex).trim();
-                        const currentWordIdx = textUpToChar ? textUpToChar.split(" ").length : 0;
-                        
-                        document.querySelectorAll("#shadow-text-screen span").forEach(span => {{
-                            span.style.backgroundColor = "transparent";
-                            span.style.color = "#fff";
-                        }});
-                        
-                        const activeWordSpan = document.getElementById(`word-${{currentWordIdx}}`);
-                        if (activeWordSpan) {{
-                            activeWordSpan.style.backgroundColor = "#f9b115";
-                            activeWordSpan.style.color = "#000";
-                        }}
-                        
-                        const completionRatio = currentWordIdx / totalWords;
-                        let slideTargetIdx = Math.floor(completionRatio * slidesData.length);
-                        if (slideTargetIdx >= slidesData.length) slideTargetIdx = slidesData.length - 1;
-                        
-                        if(slidesData[slideTargetIdx]) {{
-                            slideTitle.innerText = slidesData[slideTargetIdx].title;
-                            slideDesc.innerText = slidesData[slideTargetIdx].desc;
-                            canvasDeck.style.background = dynamicGradients[slideTargetIdx % dynamicGradients.length];
-                        }}
-                    }}
-                }};
-                
-                utterance.onend = function() {{
-                    document.querySelectorAll("#shadow-text-screen span").forEach(span => {{
-                        span.style.backgroundColor = "transparent";
-                    }});
-                    slideTitle.innerText = "Lesson Completed!";
-                    slideDesc.innerText = "Excellent tracking momentum. Click 'Next Page' or advance to your next milestone checklist item.";
-                    canvasDeck.style.background = "linear-gradient(135deg, #463077 0%, #251742 100%)";
-                }};
-                
-                synth.speak(utterance);
-            }}
-            
-            function stopLessonVideo() {{
-                synth.cancel();
-            }}
-        </script>
-        """
-        st.components.v1.html(html_presentation_component, height=600, scrolling=False)
-    else:
-        st.caption("ℹ️ No textual content exists on this layout page to power the automation presentation video deck.")
-
-    st.markdown("---")
-    
-    # 7. Chapter Manual Download Action Button
+    # 6. Chapter Manual Download Action Button
     full_chapter_writer = PdfWriter()
     for p_idx in range(target_start - 1, target_end):
         if p_idx < len(reader.pages):
